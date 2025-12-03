@@ -1,10 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { openai, DEFAULT_MODEL, CV_ANALYSIS_SYSTEM_PROMPT } from '@/lib/openai'
 import { hashCV, getCachedAnalysis, storeAnalysis } from '@/lib/cv-cache'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
     try {
-        const { cvContent, prompt, userId } = await request.json()
+        // Create authenticated Supabase client from request cookies
+        const supabase = await createServerSupabaseClient()
+
+        // Verify user is authenticated
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError) {
+            console.error('Auth error:', authError)
+        }
+
+        if (!user) {
+            console.log('No user found in session')
+        } else {
+            console.log('User authenticated:', user.id)
+        }
+
+        if (authError || !user) {
+            return NextResponse.json(
+                {
+                    error: 'Unauthorized - please sign in',
+                    details: authError?.message || 'No user session found'
+                },
+                { status: 401 }
+            )
+        }
+
+        const { cvContent, prompt } = await request.json()
 
         if (!cvContent) {
             return NextResponse.json(
@@ -13,18 +40,11 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'User ID is required' },
-                { status: 401 }
-            )
-        }
-
         // Generate hash of CV content
         const cvHash = await hashCV(cvContent)
 
-        // Check for cached analysis
-        const cachedResult = await getCachedAnalysis(userId, cvHash)
+        // Check for cached analysis (using authenticated client)
+        const cachedResult = await getCachedAnalysis(supabase, user.id, cvHash)
 
         if (cachedResult) {
             // Cache hit - return cached analysis
@@ -69,7 +89,7 @@ export async function POST(request: NextRequest) {
         // Store analysis in cache (non-blocking)
         try {
             const filename = `CV-${new Date().toISOString().split('T')[0]}`
-            await storeAnalysis(userId, cvHash, cvContent, filename, analysis)
+            await storeAnalysis(supabase, user.id, cvHash, cvContent, filename, analysis)
         } catch (cacheError) {
             console.warn('Failed to cache analysis:', cacheError)
             // Continue without caching - don't fail the request

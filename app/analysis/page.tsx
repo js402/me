@@ -57,13 +57,7 @@ export default function AnalysisPage() {
         setError('')
 
         try {
-            // Get current user session
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session?.user?.id) {
-                throw new Error('User not authenticated')
-            }
-
-            const result = await analyzeCV(content, session.user.id)
+            const result = await analyzeCV(content)
             setAnalysis(result.analysis)
             setFromCache(result.fromCache)
             setCachedAt(result.cachedAt)
@@ -211,6 +205,10 @@ export default function AnalysisPage() {
 
                 {/* Actions */}
                 <div className="mt-6 flex gap-4 justify-end">
+                    <Button onClick={() => router.push('/career-guidance')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Get Career Guidance
+                    </Button>
                     <Button variant="outline" onClick={handleNewCV}>
                         Analyze Another CV
                     </Button>

@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Generate SHA-256 hash of CV content for deduplication
@@ -14,18 +14,17 @@ export async function hashCV(content: string): Promise<string> {
 /**
  * Check if CV analysis exists in cache
  */
-export async function getCachedAnalysis(userId: string, cvHash: string) {
+export async function getCachedAnalysis(
+    supabase: SupabaseClient,
+    userId: string,
+    cvHash: string
+) {
     const { data, error } = await supabase
         .from('cv_analyses')
         .select('*')
         .eq('user_id', userId)
         .eq('cv_hash', cvHash)
         .single()
-
-    if (error) {
-        // Not found or other error
-        return null
-    }
 
     return data
 }
@@ -34,6 +33,7 @@ export async function getCachedAnalysis(userId: string, cvHash: string) {
  * Store CV analysis in database
  */
 export async function storeAnalysis(
+    supabase: SupabaseClient,
     userId: string,
     cvHash: string,
     cvContent: string,
@@ -63,7 +63,10 @@ export async function storeAnalysis(
 /**
  * Get all analyses for a user
  */
-export async function getUserAnalyses(userId: string) {
+export async function getUserAnalyses(
+    supabase: SupabaseClient,
+    userId: string
+) {
     const { data, error } = await supabase
         .from('cv_analyses')
         .select('*')
@@ -81,7 +84,10 @@ export async function getUserAnalyses(userId: string) {
 /**
  * Update analysis timestamp (for cache hit tracking)
  */
-export async function updateAnalysisTimestamp(id: string) {
+export async function updateAnalysisTimestamp(
+    supabase: SupabaseClient,
+    id: string
+) {
     const { error } = await supabase
         .from('cv_analyses')
         .update({ updated_at: new Date().toISOString() })

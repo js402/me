@@ -22,7 +22,6 @@ export interface AnalyzeCVError {
 
 export async function analyzeCV(
     cvContent: string,
-    userId: string,
     customPrompt?: string
 ): Promise<AnalyzeCVResponse> {
     const response = await fetch('/api/analyze-cv', {
@@ -30,9 +29,9 @@ export async function analyzeCV(
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include', // Ensure cookies are sent
         body: JSON.stringify({
             cvContent,
-            userId,
             prompt: customPrompt,
         }),
     })
