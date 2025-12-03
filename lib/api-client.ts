@@ -20,16 +20,24 @@ export interface AnalyzeCVError {
     details?: string
 }
 
+import { supabase } from "@/lib/supabase"
+
 export async function analyzeCV(
     cvContent: string,
     customPrompt?: string
 ): Promise<AnalyzeCVResponse> {
-    const response = await fetch('/api/analyze-cv', {
+    // Get current session for the token
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+        throw new Error('User not authenticated')
+    }
+
+    const response = await fetch('http://localhost:8080/analyze-cv', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
         },
-        credentials: 'include', // Ensure cookies are sent
         body: JSON.stringify({
             cvContent,
             prompt: customPrompt,
