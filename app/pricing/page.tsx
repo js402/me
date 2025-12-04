@@ -10,13 +10,13 @@ export default function PricingPage() {
             name: "Free",
             price: "$0",
             period: "forever",
-            description: "Perfect for getting started with CV analysis",
+            description: "Perfect for trying out CV analysis",
             features: [
-                "1 CV analysis per month",
-                "Basic career insights",
-                "Email support",
-                "Smart caching",
-                "Secure data storage"
+                "Unlimited CV analyses",
+                "AI-powered career insights",
+                "Smart caching for instant results",
+                "Secure encrypted storage",
+                "Markdown-formatted analysis"
             ],
             cta: "Get Started",
             href: "/",
@@ -26,18 +26,17 @@ export default function PricingPage() {
             name: "Pro",
             price: "$9.99",
             period: "per month",
-            description: "For professionals serious about their career",
+            description: "For professionals seeking in-depth career guidance",
             features: [
-                "Unlimited CV analyses",
-                "Advanced career insights",
-                "Priority support",
-                "Smart caching",
-                "Secure data storage",
-                "Career trajectory analysis",
-                "Skill gap identification",
-                "Market value estimation"
+                "Everything in Free",
+                "In-Depth Career Guidance",
+                "Strategic career path planning",
+                "Market value analysis with salary estimates",
+                "Skill gap identification with learning resources",
+                "Priority AI processing",
+                "Downloadable reports"
             ],
-            cta: "Start Free Trial",
+            cta: "Upgrade to Pro",
             href: "/checkout",
             popular: true
         },
@@ -45,16 +44,14 @@ export default function PricingPage() {
             name: "Enterprise",
             price: "Custom",
             period: "contact us",
-            description: "For teams and organizations",
+            description: "Coming soon - for teams and organizations",
             features: [
                 "Everything in Pro",
-                "Team collaboration",
-                "Custom integrations",
+                "Team collaboration (coming soon)",
+                "Custom integrations (coming soon)",
                 "Dedicated support",
-                "SLA guarantee",
-                "Custom AI models",
-                "Bulk processing",
-                "API access"
+                "Bulk processing (coming soon)",
+                "API access (coming soon)"
             ],
             cta: "Contact Sales",
             href: "/about",
@@ -159,11 +156,11 @@ export default function PricingPage() {
 
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-lg">Is there a free trial?</CardTitle>
+                                    <CardTitle className="text-lg">How does billing work?</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-muted-foreground">
-                                        Yes! The Pro plan includes a 14-day free trial. No credit card required.
+                                        Pro subscriptions are billed monthly via Stripe. You can cancel anytime and retain access until the end of your billing period.
                                     </p>
                                 </CardContent>
                             </Card>
@@ -174,7 +171,7 @@ export default function PricingPage() {
 
             <footer className="border-t py-6">
                 <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-                    <p>&copy; 2024 TechCareer.AI. All rights reserved.</p>
+                    <p>&copy; 2024 CV Career Insights. All rights reserved.</p>
                 </div>
             </footer>
         </div>

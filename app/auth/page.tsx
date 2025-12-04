@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,8 +13,10 @@ import { supabase } from "@/lib/supabase"
 
 export default function AuthPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string>('')
+    const [redirectTo, setRedirectTo] = useState<string>('/')
 
     // Sign In
     const [signInEmail, setSignInEmail] = useState('')
@@ -25,6 +27,14 @@ export default function AuthPage() {
     const [signUpPassword, setSignUpPassword] = useState('')
     const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('')
     const [emailSent, setEmailSent] = useState(false)
+
+    // Read redirect parameter from URL
+    useEffect(() => {
+        const redirect = searchParams.get('redirect')
+        if (redirect) {
+            setRedirectTo(`/${redirect}`)
+        }
+    }, [searchParams])
 
     const handleSignIn = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -39,8 +49,8 @@ export default function AuthPage() {
 
             if (error) throw error
 
-            // Navigate to analysis page
-            router.push('/analysis')
+            // Navigate to redirect target (analysis page or default)
+            router.push(redirectTo)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to sign in')
         } finally {
@@ -81,8 +91,8 @@ export default function AuthPage() {
                 return
             }
 
-            // Navigate to analysis page
-            router.push('/analysis')
+            // Navigate to redirect target (analysis page or default)
+            router.push(redirectTo)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to sign up')
         } finally {

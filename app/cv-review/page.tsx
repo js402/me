@@ -15,9 +15,9 @@ export default function CVReviewPage() {
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
-        // Retrieve CV content from sessionStorage
-        const content = sessionStorage.getItem('cvContent')
-        const name = sessionStorage.getItem('cvFilename')
+        // Retrieve CV content from localStorage
+        const content = localStorage.getItem('cvContent')
+        const name = localStorage.getItem('cvFilename')
 
         if (!content) {
             // No CV uploaded, redirect to home
@@ -32,9 +32,9 @@ export default function CVReviewPage() {
     }, [router])
 
     const handleBack = () => {
-        // Clear session storage and go back
-        sessionStorage.removeItem('cvContent')
-        sessionStorage.removeItem('cvFilename')
+        // Clear local storage and go back
+        localStorage.removeItem('cvContent')
+        localStorage.removeItem('cvFilename')
         router.push('/')
     }
 
@@ -58,8 +58,8 @@ export default function CVReviewPage() {
             // User is logged in, go directly to analysis
             router.push('/analysis')
         } else {
-            // User not logged in, go to auth page
-            router.push('/auth')
+            // User not logged in, go to auth page with redirect parameter
+            router.push('/auth?redirect=analysis')
         }
     }
 

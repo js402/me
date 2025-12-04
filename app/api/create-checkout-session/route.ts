@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
                 },
             ],
             mode: 'subscription',
-            success_url: `${req.headers.get('origin')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${req.headers.get('origin')}/career-guidance?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${req.headers.get('origin')}/checkout/cancel`,
             client_reference_id: user.id,
             metadata: {

@@ -14,10 +14,10 @@ export default function AboutPage() {
                 <section className="container mx-auto px-4 py-16 md:py-24">
                     <div className="text-center max-w-3xl mx-auto mb-16">
                         <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                            About TechCareer.AI
+                            About CV Career Insights
                         </h1>
                         <p className="text-xl text-muted-foreground">
-                            Empowering tech professionals to reach their full career potential through AI-driven insights
+                            Empowering professionals to reach their full career potential through AI-driven CV analysis
                         </p>
                     </div>
                 </section>
@@ -30,8 +30,8 @@ export default function AboutPage() {
                         </CardHeader>
                         <CardContent className="space-y-4 text-muted-foreground">
                             <p>
-                                At TechCareer.AI, we believe that every tech professional deserves access to world-class
-                                career guidance. That&apos;s why we&apos;ve built an AI-powered platform that analyzes your CV and
+                                We believe that every professional deserves access to quality
+                                career guidance. That's why we've built an AI-powered platform that analyzes your CV and
                                 provides personalized, actionable insights to help you advance your career.
                             </p>
                             <p>
@@ -61,8 +61,8 @@ export default function AboutPage() {
                                 insights that would normally cost hundreds of dollars and take days to receive.
                             </p>
                             <p>
-                                Our platform combines cutting-edge AI technology with best practices from career experts
-                                to give you the guidance you need, when you need it, at a price everyone can afford.
+                                Our platform combines cutting-edge AI technology (GPT-4) with structured prompt engineering
+                                to give you the guidance you need, when you need it.
                             </p>
                         </CardContent>
                     </Card>
@@ -153,7 +153,7 @@ export default function AboutPage() {
                             </div>
 
                             <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-                                Made with <Heart className="h-4 w-4 text-red-500 fill-current" /> by tech professionals, for tech professionals
+                                Made with <Heart className="h-4 w-4 text-red-500 fill-current" /> for professionals seeking career growth
                             </p>
                         </div>
                     </div>
@@ -162,7 +162,7 @@ export default function AboutPage() {
 
             <footer className="border-t py-6">
                 <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-                    <p>&copy; 2024 TechCareer.AI. All rights reserved.</p>
+                    <p>&copy; 2024 CV Career Insights. All rights reserved.</p>
                 </div>
             </footer>
         </div>

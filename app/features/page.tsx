@@ -9,7 +9,7 @@ export default function FeaturesPage() {
         {
             icon: Sparkles,
             title: "AI-Powered Analysis",
-            description: "Get intelligent career guidance powered by advanced AI that understands your unique skills and experience."
+            description: "Get intelligent career guidance powered by GPT-4 that analyzes your CV structure, experience, and skills."
         },
         {
             icon: Shield,
@@ -84,7 +84,7 @@ export default function FeaturesPage() {
                             Ready to Transform Your Career?
                         </h2>
                         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                            Join thousands of professionals who have already discovered their career potential
+                            Start analyzing your CV and get personalized career insights today
                         </p>
                         <div className="flex gap-4 justify-center flex-wrap">
                             <Button size="lg" asChild>
@@ -100,7 +100,7 @@ export default function FeaturesPage() {
 
             <footer className="border-t py-6">
                 <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-                    <p>&copy; 2024 TechCareer.AI. All rights reserved.</p>
+                    <p>&copy; 2024 CV Career Insights. All rights reserved.</p>
                 </div>
             </footer>
         </div>

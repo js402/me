@@ -44,14 +44,14 @@ export default function AnalysisPage() {
         const { data: { session } } = await supabase.auth.getSession()
 
         if (!session) {
-            // Not authenticated, redirect to auth
-            router.push('/auth')
+            // Not authenticated, redirect to auth with redirect to analysis
+            router.push('/auth?redirect=analysis')
             return
         }
 
-        // Retrieve CV content from sessionStorage
-        const content = sessionStorage.getItem('cvContent')
-        const name = sessionStorage.getItem('cvFilename')
+        // Retrieve CV content from localStorage
+        const content = localStorage.getItem('cvContent')
+        const name = localStorage.getItem('cvFilename')
 
         if (!content) {
             // No CV uploaded, redirect to home
@@ -84,8 +84,8 @@ export default function AnalysisPage() {
     }
 
     const handleNewCV = () => {
-        sessionStorage.removeItem('cvContent')
-        sessionStorage.removeItem('cvFilename')
+        localStorage.removeItem('cvContent')
+        localStorage.removeItem('cvFilename')
         router.push('/')
     }
 

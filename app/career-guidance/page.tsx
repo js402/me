@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
 import { ArrowLeft, Sparkles, Map, Target, TrendingUp, Loader2, Lock, Download } from "lucide-react"
 import { useSubscription } from '@/hooks/useSubscription'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface CareerGuidance {
     strategicPath: any
@@ -70,8 +71,11 @@ export default function CareerGuidancePage() {
     const [error, setError] = useState<string>('')
 
     useEffect(() => {
-        // Load CV content from sessionStorage
-        const content = sessionStorage.getItem('cvContent')
+        if (subLoading) return
+        if (!hasProAccess) return
+
+        // Load CV content from localStorage
+        const content = localStorage.getItem('cvContent')
         if (!content) {
             router.push('/cv-review')
             return
@@ -155,44 +159,14 @@ ${guidance.skillGap}
         )
     }
 
-    // Show upgrade prompt for non-pro users
+    // Redirect non-pro users to pricing page
     if (!hasProAccess) {
+        router.push('/pricing')
         return (
             <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
                 <Navbar />
-                <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
-                    <div className="mb-6">
-                        <Button
-                            variant="ghost"
-                            onClick={() => router.back()}
-                            className="mb-4 gap-2 pl-0 hover:pl-2 transition-all"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back to Analysis
-                        </Button>
-                    </div>
-
-                    <Card className="border-purple-500/50 bg-gradient-to-br from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20">
-                        <CardContent className="pt-12 pb-12 text-center">
-                            <div className="mx-auto w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-6">
-                                <Lock className="h-8 w-8 text-purple-600" />
-                            </div>
-                            <h2 className="text-2xl font-bold mb-4">Pro Feature</h2>
-                            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                                Advanced career guidance with strategic planning, market value analysis, and skill gap roadmaps is available for Pro subscribers.
-                            </p>
-                            <Button
-                                size="lg"
-                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                                asChild
-                            >
-                                <Link href="/pricing">
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Upgrade to Pro
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
+                <main className="flex-1 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
                 </main>
             </div>
         )
@@ -245,90 +219,132 @@ ${guidance.skillGap}
                 )}
 
                 {isLoading ? (
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <Card className="md:col-span-2 border-purple-500/20">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Target className="h-5 w-5 text-purple-600" />
-                                    Strategic Career Path
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-40 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse flex items-center justify-center text-muted-foreground">
-                                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                                    Generating insights...
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <Tabs defaultValue="strategic" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="strategic" className="gap-2">
+                                <Target className="h-4 w-4" />
+                                Strategic Path
+                            </TabsTrigger>
+                            <TabsTrigger value="market" className="gap-2">
+                                <TrendingUp className="h-4 w-4" />
+                                Market Value
+                            </TabsTrigger>
+                            <TabsTrigger value="skills" className="gap-2">
+                                <Map className="h-4 w-4" />
+                                Skill Gap
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5 text-blue-600" />
-                                    Market Value Analysis
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-32 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse" />
-                            </CardContent>
-                        </Card>
+                        <TabsContent value="strategic" className="mt-6">
+                            <Card className="border-purple-500/20">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Target className="h-5 w-5 text-purple-600" />
+                                        Strategic Career Path
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-40 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse flex items-center justify-center text-muted-foreground">
+                                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                        Generating insights...
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Map className="h-5 w-5 text-green-600" />
-                                    Skill Gap Roadmap
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-32 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse" />
-                            </CardContent>
-                        </Card>
-                    </div>
+                        <TabsContent value="market" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5 text-blue-600" />
+                                        Market Value Analysis
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-32 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="skills" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Map className="h-5 w-5 text-green-600" />
+                                        Skill Gap Roadmap
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-32 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 ) : guidance ? (
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <Card className="md:col-span-2 border-purple-500/20 bg-purple-50/10 dark:bg-purple-950/10">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Target className="h-5 w-5 text-purple-600" />
-                                    Strategic Career Path
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    {renderContent(guidance.strategicPath)}
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <Tabs defaultValue="strategic" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="strategic" className="gap-2">
+                                <Target className="h-4 w-4" />
+                                Strategic Path
+                            </TabsTrigger>
+                            <TabsTrigger value="market" className="gap-2">
+                                <TrendingUp className="h-4 w-4" />
+                                Market Value
+                            </TabsTrigger>
+                            <TabsTrigger value="skills" className="gap-2">
+                                <Map className="h-4 w-4" />
+                                Skill Gap
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <Card className="border-blue-500/20 bg-blue-50/10 dark:bg-blue-950/10">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5 text-blue-600" />
-                                    Market Value Analysis
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    {renderContent(guidance.marketValue)}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <TabsContent value="strategic" className="mt-6">
+                            <Card className="border-purple-500/20 bg-purple-50/10 dark:bg-purple-950/10">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Target className="h-5 w-5 text-purple-600" />
+                                        Strategic Career Path
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                                        {renderContent(guidance.strategicPath)}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
 
-                        <Card className="border-green-500/20 bg-green-50/10 dark:bg-green-950/10">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Map className="h-5 w-5 text-green-600" />
-                                    Skill Gap Roadmap
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    {renderContent(guidance.skillGap)}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                        <TabsContent value="market" className="mt-6">
+                            <Card className="border-blue-500/20 bg-blue-50/10 dark:bg-blue-950/10">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5 text-blue-600" />
+                                        Market Value Analysis
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                                        {renderContent(guidance.marketValue)}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="skills" className="mt-6">
+                            <Card className="border-green-500/20 bg-green-50/10 dark:bg-green-950/10">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Map className="h-5 w-5 text-green-600" />
+                                        Skill Gap Roadmap
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                                        {renderContent(guidance.skillGap)}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 ) : null}
             </main>
         </div>

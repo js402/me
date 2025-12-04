@@ -38,9 +38,9 @@ export function CVUpload({ onUpload }: CVUploadProps) {
             // Read file content
             const content = await file.text()
 
-            // Store in sessionStorage for the review page
-            sessionStorage.setItem('cvContent', content)
-            sessionStorage.setItem('cvFilename', file.name)
+            // Store in localStorage for persistence through auth flow
+            localStorage.setItem('cvContent', content)
+            localStorage.setItem('cvFilename', file.name)
 
             // Call optional callback
             if (onUpload) {
@@ -91,8 +91,8 @@ export function CVUpload({ onUpload }: CVUploadProps) {
     return (
         <Card
             className={`relative group overflow-hidden border-dashed border-2 transition-all duration-300 cursor-pointer bg-gradient-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-950/50 dark:to-slate-900/50 hover:shadow-xl ${isDragging
-                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/50'
-                    : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
+                ? 'border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/50'
+                : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
                 } ${isProcessing ? 'opacity-50 cursor-wait' : ''}`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
