@@ -27,8 +27,9 @@ export async function getUserSubscription(
         .from('subscriptions')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'active')
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
     if (error) {
         if (error.code === 'PGRST116') {
@@ -66,8 +67,8 @@ export async function hasProAccess(
         return false
     }
 
-    // Check if subscription is active and not expired
-    if (subscription.status !== 'active') {
+    // Check if subscription is active or trialing
+    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
         return false
     }
 

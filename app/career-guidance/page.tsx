@@ -10,9 +10,55 @@ import { ArrowLeft, Sparkles, Map, Target, TrendingUp, Loader2, Lock, Download }
 import { useSubscription } from '@/hooks/useSubscription'
 
 interface CareerGuidance {
-    strategicPath: string
-    marketValue: string
-    skillGap: string
+    strategicPath: any
+    marketValue: any
+    skillGap: any
+}
+
+// Helper function to render content based on type
+const renderContent = (content: any, depth: number = 0): React.ReactNode => {
+    if (content === null || content === undefined) {
+        return null
+    }
+
+    // If it's a string, render it directly
+    if (typeof content === 'string') {
+        return <p className="whitespace-pre-wrap">{content}</p>
+    }
+
+    // If it's an array, render as a list
+    if (Array.isArray(content)) {
+        return (
+            <ul className="list-disc list-inside space-y-1">
+                {content.map((item, index) => (
+                    <li key={index}>
+                        {typeof item === 'string' ? item : renderContent(item, depth + 1)}
+                    </li>
+                ))}
+            </ul>
+        )
+    }
+
+    // If it's an object, render key-value pairs
+    if (typeof content === 'object') {
+        return (
+            <div className="space-y-3">
+                {Object.entries(content).map(([key, value]) => (
+                    <div key={key}>
+                        <h4 className="font-semibold text-sm capitalize mb-1">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                        </h4>
+                        <div className="ml-4">
+                            {renderContent(value, depth + 1)}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    // Fallback for other types
+    return <span>{String(content)}</span>
 }
 
 export default function CareerGuidancePage() {
@@ -250,7 +296,7 @@ ${guidance.skillGap}
                             </CardHeader>
                             <CardContent>
                                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    <p className="whitespace-pre-wrap">{guidance.strategicPath}</p>
+                                    {renderContent(guidance.strategicPath)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -264,7 +310,7 @@ ${guidance.skillGap}
                             </CardHeader>
                             <CardContent>
                                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    <p className="whitespace-pre-wrap">{guidance.marketValue}</p>
+                                    {renderContent(guidance.marketValue)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -278,7 +324,7 @@ ${guidance.skillGap}
                             </CardHeader>
                             <CardContent>
                                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    <p className="whitespace-pre-wrap">{guidance.skillGap}</p>
+                                    {renderContent(guidance.skillGap)}
                                 </div>
                             </CardContent>
                         </Card>

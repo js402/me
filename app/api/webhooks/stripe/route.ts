@@ -7,13 +7,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-11-17.clover',
 })
 
-// Create Supabase client with service role for webhook operations
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 export async function POST(req: NextRequest) {
+    // Create Supabase client with service role for webhook operations
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
     const body = await req.text()
     const signature = req.headers.get('stripe-signature')
 
@@ -54,10 +56,19 @@ export async function POST(req: NextRequest) {
                     const stripeSubscription = subscription as unknown as {
                         id: string
                         status: string
-                        current_period_start: number
-                        current_period_end: number
+                        current_period_start: number | null
+                        current_period_end: number | null
                         cancel_at_period_end: boolean
+                        items: {
+                            data: {
+                                current_period_start: number
+                                current_period_end: number
+                            }[]
+                        }
                     }
+
+                    const currentPeriodStart = stripeSubscription.current_period_start ?? stripeSubscription.items.data[0].current_period_start
+                    const currentPeriodEnd = stripeSubscription.current_period_end ?? stripeSubscription.items.data[0].current_period_end
 
                     await upsertSubscription(supabase, {
                         user_id: session.metadata.userId,
@@ -65,8 +76,8 @@ export async function POST(req: NextRequest) {
                         stripe_subscription_id: stripeSubscription.id,
                         status: stripeSubscription.status as SubscriptionStatus,
                         plan: 'pro',
-                        current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-                        current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+                        current_period_start: new Date(currentPeriodStart * 1000).toISOString(),
+                        current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
                         cancel_at_period_end: stripeSubscription.cancel_at_period_end,
                     })
 

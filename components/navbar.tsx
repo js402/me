@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
 import { supabase } from "@/lib/supabase"
 import { User } from "@supabase/supabase-js"
-import { LogOut, User as UserIcon } from "lucide-react"
+import { LogOut, User as UserIcon, Crown, Clock } from "lucide-react"
+import { useSubscription } from "@/hooks/useSubscription"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,6 +22,7 @@ export function Navbar() {
     const router = useRouter()
     const [user, setUser] = useState<User | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const { hasProAccess, isTrialing } = useSubscription()
 
     useEffect(() => {
         // Get initial session
@@ -83,6 +85,33 @@ export function Navbar() {
                                         <DropdownMenuLabel>
                                             {user.email}
                                         </DropdownMenuLabel>
+                                        <div className="px-2 py-1.5">
+                                            {hasProAccess ? (
+                                                <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-200 dark:border-purple-800">
+                                                    {isTrialing ? (
+                                                        <>
+                                                            <Clock className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                                            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                                                                Trial Active
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Crown className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                                            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                                                                Pro Member
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800">
+                                                    <span className="text-xs font-medium text-muted-foreground">
+                                                        Free Plan
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem onClick={() => router.push('/analysis')}>
                                             My Analysis

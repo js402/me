@@ -8,6 +8,8 @@ import { Sparkles, Loader2, Download, FileText } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { supabase } from "@/lib/supabase"
 import { analyzeCV } from "@/lib/api-client"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export default function AnalysisPage() {
     const router = useRouter()
@@ -195,10 +197,12 @@ export default function AnalysisPage() {
                         </CardHeader>
 
                         <CardContent className="p-6">
-                            <div className="prose dark:prose-invert max-w-none">
-                                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                            <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                >
                                     {analysis}
-                                </div>
+                                </ReactMarkdown>
                             </div>
                         </CardContent>
                     </Card>

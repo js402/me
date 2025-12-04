@@ -57,7 +57,7 @@ export function useSubscription() {
         }
     }
 
-    const hasProAccess = subscription?.status === 'active'
+    const hasProAccess = subscription?.status === 'active' || subscription?.status === 'trialing'
     const isTrialing = subscription?.status === 'trialing'
     const isCanceled = subscription?.cancel_at_period_end === true
 
