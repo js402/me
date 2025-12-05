@@ -6,9 +6,11 @@ interface CVStore {
     filename: string
     analysis: string
     guidance: Record<string, unknown> | null
+    jobDescription: string
     setCV: (content: string, filename: string) => void
     setAnalysis: (analysis: string) => void
     setGuidance: (guidance: Record<string, unknown>) => void
+    setJobDescription: (jobDescription: string) => void
     clear: () => void
 }
 
@@ -19,10 +21,12 @@ export const useCVStore = create<CVStore>()(
             filename: '',
             analysis: '',
             guidance: null,
+            jobDescription: '',
             setCV: (content, filename) => set({ content, filename }),
             setAnalysis: (analysis) => set({ analysis }),
             setGuidance: (guidance) => set({ guidance }),
-            clear: () => set({ content: '', filename: '', analysis: '', guidance: null }),
+            setJobDescription: (jobDescription) => set({ jobDescription }),
+            clear: () => set({ content: '', filename: '', analysis: '', guidance: null, jobDescription: '' }),
         }),
         {
             name: 'cv-storage',

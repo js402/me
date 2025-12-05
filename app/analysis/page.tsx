@@ -175,37 +175,66 @@ export default function AnalysisPage() {
 
                 {/* Analysis Results */}
                 {analysis && (
-                    <Card>
-                        <CardHeader className="border-b">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20">
-                                        <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <>
+                        <Card>
+                            <CardHeader className="border-b">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20">
+                                            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <CardTitle className="text-xl">Career Analysis</CardTitle>
                                     </div>
-                                    <CardTitle className="text-xl">Career Analysis</CardTitle>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleDownload}
+                                        className="gap-2"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        Download
+                                    </Button>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleDownload}
-                                    className="gap-2"
-                                >
-                                    <Download className="h-4 w-4" />
-                                    Download
-                                </Button>
-                            </div>
-                        </CardHeader>
+                            </CardHeader>
 
-                        <CardContent className="p-6">
-                            <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed">
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                >
-                                    {analysis}
-                                </ReactMarkdown>
+                            <CardContent className="p-6">
+                                <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed">
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                    >
+                                        {analysis}
+                                    </ReactMarkdown>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Job Match Analysis Navigation */}
+                        <Card className="mt-8 border-none shadow-lg bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 overflow-hidden relative group cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/analysis/job-match')}>
+                            <div className="absolute top-0 right-0 p-4">
+                                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-sm">
+                                    <Sparkles className="h-3 w-3" />
+                                    PREMIUM
+                                </div>
                             </div>
-                        </CardContent>
-                    </Card>
+
+                            <CardContent className="p-8 flex items-center justify-between">
+                                <div className="flex items-center gap-6">
+                                    <div className="p-4 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform duration-300">
+                                        <FileText className="h-8 w-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold mb-2">Job Match Analysis</h3>
+                                        <p className="text-muted-foreground">
+                                            See how well your CV matches a specific job description.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="hidden sm:flex items-center justify-center h-12 w-12 rounded-full bg-white dark:bg-slate-800 shadow-sm group-hover:translate-x-2 transition-transform duration-300">
+                                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </>
                 )}
 
                 {/* Actions */}
@@ -222,3 +251,4 @@ export default function AnalysisPage() {
         </div>
     )
 }
+
