@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -5,8 +8,25 @@ import { Navbar } from "@/components/navbar"
 import { Check } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { PageHeader } from "@/components/page-header"
+import { supabase } from "@/lib/supabase"
+import { hasProAccess } from "@/lib/subscription"
 
 export default function PricingPage() {
+    const [isPro, setIsPro] = useState<boolean | null>(null)
+
+    useEffect(() => {
+        const checkProStatus = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const proStatus = await hasProAccess(supabase, user.id)
+                setIsPro(proStatus)
+            } else {
+                setIsPro(false)
+            }
+        }
+        checkProStatus()
+    }, [])
+
     const plans = [
         {
             name: "Free",
@@ -22,7 +42,8 @@ export default function PricingPage() {
             ],
             cta: "Get Started",
             href: "/",
-            popular: false
+            popular: false,
+            planType: "free"
         },
         {
             name: "Pro",
@@ -40,7 +61,8 @@ export default function PricingPage() {
             ],
             cta: "Upgrade to Pro",
             href: "/checkout",
-            popular: true
+            popular: true,
+            planType: "pro"
         },
         {
             name: "Enterprise",
@@ -57,9 +79,27 @@ export default function PricingPage() {
             ],
             cta: "Contact Sales",
             href: "/about",
-            popular: false
+            popular: false,
+            planType: "enterprise"
         }
     ]
+
+    const getButtonProps = (planType: string) => {
+        if (isPro && planType === 'pro') {
+            return {
+                cta: "Current Plan",
+                disabled: true,
+                variant: "secondary"
+            }
+        }
+
+        const plan = plans.find(p => p.planType === planType)
+        return {
+            cta: plan?.cta || "Get Started",
+            disabled: false,
+            variant: plan?.popular ? "default" : "outline"
+        }
+    }
 
     return (
         <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
@@ -72,52 +112,71 @@ export default function PricingPage() {
                 >
                     {/* Pricing Cards */}
                     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        {plans.map((plan, index) => (
-                            <Card
-                                key={index}
-                                className={`relative border-2 transition-all duration-300 hover:shadow-xl ${plan.popular
-                                    ? 'border-blue-500 shadow-lg scale-105'
-                                    : 'border-slate-200 dark:border-slate-800 hover:border-blue-500/50'
-                                    }`}
-                            >
-                                {plan.popular && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                                        <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                                            Most Popular
-                                        </span>
-                                    </div>
-                                )}
+                        {plans.map((plan, index) => {
+                            const buttonProps = getButtonProps(plan.planType)
+                            const isCurrentPlan = isPro && plan.planType === 'pro'
 
-                                <CardHeader className="text-center pb-8">
-                                    <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
-                                    <div className="mb-2">
-                                        <span className="text-4xl font-bold">{plan.price}</span>
-                                        <span className="text-muted-foreground ml-2">/{plan.period}</span>
-                                    </div>
-                                    <CardDescription>{plan.description}</CardDescription>
-                                </CardHeader>
+                            return (
+                                <Card
+                                    key={index}
+                                    className={`relative border-2 transition-all duration-300 hover:shadow-xl ${isCurrentPlan
+                                            ? 'border-green-500 shadow-lg scale-105'
+                                            : plan.popular
+                                                ? 'border-blue-500 shadow-lg scale-105'
+                                                : 'border-slate-200 dark:border-slate-800 hover:border-blue-500/50'
+                                        }`}
+                                >
+                                    {isCurrentPlan && (
+                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                                            <span className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                                                Your Plan
+                                            </span>
+                                        </div>
+                                    )}
+                                    {!isCurrentPlan && plan.popular && (
+                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                                            <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                                                Most Popular
+                                            </span>
+                                        </div>
+                                    )}
 
-                                <CardContent className="space-y-6">
-                                    <ul className="space-y-3">
-                                        {plan.features.map((feature, featureIndex) => (
-                                            <li key={featureIndex} className="flex items-start gap-2">
-                                                <Check className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                                                <span className="text-sm">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <CardHeader className="text-center pb-8">
+                                        <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                                        <div className="mb-2">
+                                            <span className="text-4xl font-bold">{plan.price}</span>
+                                            <span className="text-muted-foreground ml-2">/{plan.period}</span>
+                                        </div>
+                                        <CardDescription>{plan.description}</CardDescription>
+                                    </CardHeader>
 
-                                    <Button
-                                        className="w-full"
-                                        variant={plan.popular ? "default" : "outline"}
-                                        size="lg"
-                                        asChild
-                                    >
-                                        <Link href={plan.href}>{plan.cta}</Link>
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    <CardContent className="space-y-6">
+                                        <ul className="space-y-3">
+                                            {plan.features.map((feature, featureIndex) => (
+                                                <li key={featureIndex} className="flex items-start gap-2">
+                                                    <Check className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                                                    <span className="text-sm">{feature}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                        <Button
+                                            className="w-full"
+                                            variant={buttonProps.variant as "default" | "outline" | "secondary"}
+                                            size="lg"
+                                            disabled={buttonProps.disabled}
+                                            asChild={!buttonProps.disabled}
+                                        >
+                                            {buttonProps.disabled ? (
+                                                <span>{buttonProps.cta}</span>
+                                            ) : (
+                                                <Link href={plan.href}>{buttonProps.cta}</Link>
+                                            )}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
                     </div>
                 </PageHeader>
 

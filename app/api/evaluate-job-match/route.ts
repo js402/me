@@ -4,17 +4,23 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { hasProAccess } from '@/lib/subscription'
 
-const JOB_MATCH_PROMPT = `You are an expert career advisor and technical recruiter. Your task is to evaluate how well a candidate's CV matches a specific Job Description (JD).
+const JOB_MATCH_PROMPT = `You are an expert career advisor and technical recruiter. Your task is to evaluate how well a candidate's CV matches a specific Job Description (JD) AND extract key details from the JD.
 
 Compare the provided CV against the Job Description and return a JSON object with the following structure:
 {
   "matchScore": number, // A score from 0 to 100 representing the fit
   "matchingSkills": string[], // List of skills from the JD that the candidate possesses
   "missingSkills": string[], // List of important skills from the JD that are missing or weak in the CV
-  "recommendations": string[] // 3-5 actionable tips to improve the CV for this specific job
+  "recommendations": string[], // 3-5 actionable tips to improve the CV for this specific job
+  "metadata": {
+    "company_name": string, // Extracted company name (or "Unknown Company" if not found)
+    "position_title": string, // Extracted job title (or "Unknown Position" if not found)
+    "location": string, // Extracted location (or "Remote" / "Unknown" if not found)
+    "salary_range": string // Extracted salary range (or "Not specified" if not found)
+  }
 }
 
-Be strict but fair. Focus on key technical requirements and experience levels.`
+Be strict but fair with the score. Focus on key technical requirements and experience levels.`
 
 export async function POST(request: NextRequest) {
     try {

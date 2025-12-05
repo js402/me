@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sparkles, Loader2, ArrowLeft, Copy, Download, Check } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { useCVStore } from "@/hooks/useCVStore"
-import { supabase } from "@/lib/supabase"
+import { useAuthGuard } from "@/hooks/useAuthGuard"
+import { PremiumBadge } from "@/components/analysis/premium-badge"
+import { ErrorAlert } from "@/components/analysis/error-alert"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -20,19 +22,11 @@ export default function TailorCVPage() {
     const [error, setError] = useState('')
     const [copied, setCopied] = useState(false)
 
-    useEffect(() => {
-        const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) {
-                router.push('/auth?redirect=analysis/tailor-cv')
-            }
-        }
-        checkAuth()
-
-        if (!cvContent || !jobDescription) {
-            router.push('/analysis/job-match')
-        }
-    }, [cvContent, jobDescription, router])
+    useAuthGuard({
+        redirectTo: 'analysis/tailor-cv',
+        requireCV: true,
+        cvContent: cvContent && jobDescription ? cvContent : undefined
+    })
 
     const generateTailoredCV = async () => {
         setIsGenerating(true)
@@ -98,10 +92,7 @@ export default function TailorCVPage() {
 
                 <Card className="border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden relative">
                     <div className="absolute top-0 right-0 p-4">
-                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-sm">
-                            <Sparkles className="h-3 w-3" />
-                            PREMIUM
-                        </div>
+                        <PremiumBadge />
                     </div>
 
                     <CardHeader>
@@ -147,23 +138,7 @@ export default function TailorCVPage() {
                             </div>
                         )}
 
-                        {error && (
-                            <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-900/50 dark:text-red-400 flex items-center gap-3 mb-6">
-                                <div>
-                                    <p className="font-semibold">Generation Failed</p>
-                                    <p className="text-sm opacity-90">{error}</p>
-                                    {error.includes('Pro subscribers') && (
-                                        <Button
-                                            variant="link"
-                                            className="p-0 h-auto text-red-700 dark:text-red-300 underline mt-1"
-                                            onClick={() => router.push('/pricing')}
-                                        >
-                                            Upgrade to Pro to unlock this feature
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {error && <ErrorAlert error={error} />}
 
                         {tailoredCV && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">

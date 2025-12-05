@@ -120,6 +120,9 @@ export function Navbar() {
                                         <DropdownMenuItem onClick={() => router.push('/analysis')}>
                                             My Analysis
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => router.push('/positions')}>
+                                            My Applications
+                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem onClick={handleSignOut} className="text-red-600 dark:text-red-400">
                                             <LogOut className="mr-2 h-4 w-4" />
