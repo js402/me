@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { hasProAccess } from '@/lib/subscription'
+import { rateLimit } from '@/middleware/rateLimit'
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -98,6 +100,14 @@ Return JSON:
 
 export async function POST(req: NextRequest) {
     try {
+        const ip = req.headers.get('x-forwarded-for') || 'unknown'
+        if (!rateLimit(ip, 5, 60 * 1000)) { // 5 requests per minute
+            return NextResponse.json(
+                { error: 'Too many requests. Please try again later.' },
+                { status: 429 }
+            )
+        }
+
         const supabase = await createServerSupabaseClient()
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -126,13 +136,13 @@ export async function POST(req: NextRequest) {
         }
 
         // STEP 1: Extract career information (with smart retry)
-        let careerInfo: any
+        let careerInfo: Record<string, unknown> | undefined
         let extractionAttempt = 0
         const maxExtractionAttempts = 2
 
         while (extractionAttempt < maxExtractionAttempts) {
             try {
-                const messages: any[] = [
+                const messages: ChatCompletionMessageParam[] = [
                     { role: 'system', content: CAREER_EXTRACTION_PROMPT },
                     {
                         role: 'user', content: `Extract career information from this CV:
@@ -169,13 +179,13 @@ ${cvContent}`
         }
 
         // STEP 2: Generate structured guidance (with smart retry)
-        let guidance: any
+        let guidance: Record<string, unknown> | undefined
         let guidanceAttempt = 0
         const maxGuidanceAttempts = 2
 
         while (guidanceAttempt < maxGuidanceAttempts) {
             try {
-                const messages: any[] = [
+                const messages: ChatCompletionMessageParam[] = [
                     { role: 'system', content: CAREER_GUIDANCE_PROMPT },
                     {
                         role: 'user',

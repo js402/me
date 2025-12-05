@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
 import { Sparkles, Shield, Zap, Database, Clock, TrendingUp } from "lucide-react"
+import { Footer } from "@/components/footer"
+import { PageHeader } from "@/components/page-header"
 
 export default function FeaturesPage() {
     const features = [
@@ -43,17 +45,10 @@ export default function FeaturesPage() {
             <Navbar />
 
             <main className="flex-1">
-                {/* Hero Section */}
-                <section className="container mx-auto px-4 py-16 md:py-24">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                            Powerful Features for Your Career
-                        </h1>
-                        <p className="text-xl text-muted-foreground">
-                            Everything you need to unlock your full career potential with AI-driven insights
-                        </p>
-                    </div>
-
+                <PageHeader
+                    title="Powerful Features for Your Career"
+                    description="Everything you need to unlock your full career potential with AI-driven insights"
+                >
                     {/* Features Grid */}
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
                         {features.map((feature, index) => {
@@ -75,7 +70,7 @@ export default function FeaturesPage() {
                             )
                         })}
                     </div>
-                </section>
+                </PageHeader>
 
                 {/* CTA Section */}
                 <section className="border-t bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30">
@@ -98,11 +93,7 @@ export default function FeaturesPage() {
                 </section>
             </main>
 
-            <footer className="border-t py-6">
-                <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-                    <p>&copy; 2024 CV Career Insights. All rights reserved.</p>
-                </div>
-            </footer>
+            <Footer />
         </div>
     )
 }

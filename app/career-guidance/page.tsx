@@ -1,23 +1,27 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
-import { ArrowLeft, Sparkles, Map, Target, TrendingUp, Loader2, Lock, Download } from "lucide-react"
+import { ArrowLeft, Sparkles, Map, Target, TrendingUp, Loader2, Download } from "lucide-react"
 import { useSubscription } from '@/hooks/useSubscription'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useCVStore } from "@/hooks/useCVStore"
 
-interface CareerGuidance {
-    strategicPath: any
-    marketValue: any
-    skillGap: any
+// Define more specific types for the guidance content
+type GuidanceContent = string | string[] | Record<string, unknown>
+
+// Exporting to satisfy linter if needed, or just remove if not used elsewhere
+export interface CareerGuidance {
+    strategicPath: GuidanceContent
+    marketValue: GuidanceContent
+    skillGap: GuidanceContent
 }
 
 // Helper function to render content based on type
-const renderContent = (content: any, depth: number = 0): React.ReactNode => {
+const renderContent = (content: unknown, depth: number = 0): React.ReactNode => {
     if (content === null || content === undefined) {
         return null
     }
@@ -44,7 +48,7 @@ const renderContent = (content: any, depth: number = 0): React.ReactNode => {
     if (typeof content === 'object') {
         return (
             <div className="space-y-3">
-                {Object.entries(content).map(([key, value]) => (
+                {Object.entries(content as Record<string, unknown>).map(([key, value]) => (
                     <div key={key}>
                         <h4 className="font-semibold text-sm capitalize mb-1">
                             {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -65,30 +69,11 @@ const renderContent = (content: any, depth: number = 0): React.ReactNode => {
 export default function CareerGuidancePage() {
     const router = useRouter()
     const { hasProAccess, isLoading: subLoading } = useSubscription()
-    const [cvContent, setCvContent] = useState<string>('')
-    const [guidance, setGuidance] = useState<CareerGuidance | null>(null)
+    const { content: cvContent, guidance, setGuidance } = useCVStore()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string>('')
 
-    useEffect(() => {
-        if (subLoading) return
-        if (!hasProAccess) return
-
-        // Load CV content from localStorage
-        const content = localStorage.getItem('cvContent')
-        if (!content) {
-            router.push('/cv-review')
-            return
-        }
-        setCvContent(content)
-
-        // Auto-generate guidance if user has pro access
-        if (hasProAccess && !guidance) {
-            generateGuidance(content)
-        }
-    }, [hasProAccess, guidance, router])
-
-    const generateGuidance = async (content: string) => {
+    const generateGuidance = useCallback(async (content: string) => {
         setIsLoading(true)
         setError('')
 
@@ -114,26 +99,42 @@ export default function CareerGuidancePage() {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [setGuidance])
+
+    useEffect(() => {
+        if (subLoading) return
+        if (!hasProAccess) return
+
+        if (!cvContent) {
+            router.push('/cv-review') // Or /analysis or /
+            return
+        }
+
+        // Auto-generate guidance if user has pro access and we don't have it yet
+        if (hasProAccess && !guidance) {
+            generateGuidance(cvContent)
+        }
+    }, [hasProAccess, guidance, router, subLoading, cvContent, generateGuidance])
 
     const downloadGuidance = () => {
         if (!guidance) return
 
+        // Simple stringification for download, could be improved
         const content = `
 CAREER GUIDANCE REPORT
 ======================
 
 STRATEGIC CAREER PATH
 ---------------------
-${guidance.strategicPath}
+${JSON.stringify(guidance.strategicPath, null, 2)}
 
 MARKET VALUE ANALYSIS
 ---------------------
-${guidance.marketValue}
+${JSON.stringify(guidance.marketValue, null, 2)}
 
 SKILL GAP ROADMAP
 -----------------
-${guidance.skillGap}
+${JSON.stringify(guidance.skillGap, null, 2)}
         `.trim()
 
         const blob = new Blob([content], { type: 'text/plain' })

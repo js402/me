@@ -1,8 +1,8 @@
-
 import { Card, CardContent } from "@/components/ui/card"
 import { Sparkles, Zap, Target } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { CVUpload } from "@/components/cv-upload"
+import { Footer } from "@/components/footer"
 
 export default function Home() {
   return (
@@ -67,6 +67,8 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
 import { Check } from "lucide-react"
+import { Footer } from "@/components/footer"
+import { PageHeader } from "@/components/page-header"
 
 export default function PricingPage() {
     const plans = [
@@ -64,17 +66,10 @@ export default function PricingPage() {
             <Navbar />
 
             <main className="flex-1">
-                {/* Hero Section */}
-                <section className="container mx-auto px-4 py-16 md:py-24">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                            Simple, Transparent Pricing
-                        </h1>
-                        <p className="text-xl text-muted-foreground">
-                            Choose the plan that&apos;s right for you. All plans include our core features.
-                        </p>
-                    </div>
-
+                <PageHeader
+                    title="Simple, Transparent Pricing"
+                    description="Choose the plan that's right for you. All plans include our core features."
+                >
                     {/* Pricing Cards */}
                     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                         {plans.map((plan, index) => (
@@ -124,7 +119,7 @@ export default function PricingPage() {
                             </Card>
                         ))}
                     </div>
-                </section>
+                </PageHeader>
 
                 {/* FAQ Section */}
                 <section className="border-t bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30">
@@ -169,11 +164,7 @@ export default function PricingPage() {
                 </section>
             </main>
 
-            <footer className="border-t py-6">
-                <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-                    <p>&copy; 2024 CV Career Insights. All rights reserved.</p>
-                </div>
-            </footer>
+            <Footer />
         </div>
     )
 }

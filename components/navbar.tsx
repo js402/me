@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { User } from "@supabase/supabase-js"
 import { LogOut, User as UserIcon, Crown, Clock } from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
+import { useCVStore } from "@/hooks/useCVStore"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,6 +43,9 @@ export function Navbar() {
     }, [])
 
     const handleSignOut = async () => {
+        // Clear CV data from local storage for security
+        useCVStore.getState().clear()
+
         await supabase.auth.signOut()
         router.push('/')
     }

@@ -10,18 +10,16 @@ import { supabase } from "@/lib/supabase"
 import { analyzeCV } from "@/lib/api-client"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useCVStore } from "@/hooks/useCVStore"
 
 export default function AnalysisPage() {
     const router = useRouter()
-    const [cvContent, setCvContent] = useState<string>('')
-    const [filename, setFilename] = useState<string>('')
-    const [analysis, setAnalysis] = useState<string>('')
+    const { content: cvContent, filename, analysis, setAnalysis, clear: clearCV } = useCVStore()
     const [isLoading, setIsLoading] = useState(true)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [error, setError] = useState<string>('')
     const [fromCache, setFromCache] = useState<boolean>(false)
     const [cachedAt, setCachedAt] = useState<string | undefined>()
-
 
     const startAnalysis = useCallback(async (content: string) => {
         setIsAnalyzing(true)
@@ -37,7 +35,7 @@ export default function AnalysisPage() {
         } finally {
             setIsAnalyzing(false)
         }
-    }, [])
+    }, [setAnalysis])
 
     const checkAuthAndLoadCV = useCallback(async () => {
         // Check if user is authenticated
@@ -49,23 +47,26 @@ export default function AnalysisPage() {
             return
         }
 
-        // Retrieve CV content from localStorage
-        const content = localStorage.getItem('cvContent')
-        const name = localStorage.getItem('cvFilename')
-
-        if (!content) {
+        if (!cvContent) {
             // No CV uploaded, redirect to home
             router.push('/')
             return
         }
 
-        setCvContent(content)
-        setFilename(name || 'CV')
-        setIsLoading(false)
+        // If we already have analysis, we don't necessarily need to re-run it, 
+        // but the user might expect it. The original code ran it every time.
+        // We'll keep the behavior but fix the race condition.
+        if (!analysis) {
+            try {
+                await startAnalysis(cvContent)
+            } finally {
+                setIsLoading(false)
+            }
+        } else {
+            setIsLoading(false)
+        }
 
-        // Automatically start analysis
-        startAnalysis(content)
-    }, [router, startAnalysis])
+    }, [router, cvContent, analysis, startAnalysis])
 
     useEffect(() => {
         checkAuthAndLoadCV()
@@ -84,8 +85,7 @@ export default function AnalysisPage() {
     }
 
     const handleNewCV = () => {
-        localStorage.removeItem('cvContent')
-        localStorage.removeItem('cvFilename')
+        clearCV()
         router.push('/')
     }
 

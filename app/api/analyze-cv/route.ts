@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { openai, DEFAULT_MODEL } from '@/lib/openai'
 import { hashCV, getCachedAnalysis, storeAnalysis } from '@/lib/cv-cache'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 
 // Retry helper function
 async function retryWithBackoff<T>(
@@ -86,9 +87,15 @@ const OUTPUT_VALIDATION_PROMPT = `You are a quality assurance validator. Check i
 Return JSON:
 {
   "isValid": boolean,
-  "missingS ections": string[],
+  "missingSections": string[],
   "qualityIssues": string[]
 }`
+
+interface ValidationResult {
+    isValid: boolean
+    extractedInfo?: Record<string, unknown>
+    issues?: string[]
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -127,13 +134,13 @@ export async function POST(request: NextRequest) {
         }
 
         // STEP 1: Validate and extract CV structure (with smart retry)
-        let validation: any
+        let validation: ValidationResult | undefined
         let validationAttempt = 0
         const maxValidationAttempts = 2
 
         while (validationAttempt < maxValidationAttempts) {
             try {
-                const messages: any[] = [
+                const messages: ChatCompletionMessageParam[] = [
                     { role: 'system', content: INPUT_VALIDATION_PROMPT },
                     { role: 'user', content: `Validate this CV:\n\n${cvContent}` }
                 ]
@@ -157,9 +164,9 @@ export async function POST(request: NextRequest) {
                     temperature: 0.3,
                 })
 
-                validation = JSON.parse(validationCompletion.choices[0]?.message?.content || '{}')
+                validation = JSON.parse(validationCompletion.choices[0]?.message?.content || '{}') as ValidationResult
 
-                if (validation.isValid) {
+                if (validation?.isValid) {
                     break // Success!
                 }
 
@@ -195,7 +202,7 @@ export async function POST(request: NextRequest) {
 
         while (analysisAttempt < maxAnalysisAttempts) {
             try {
-                const messages: any[] = [
+                const messages: ChatCompletionMessageParam[] = [
                     { role: 'system', content: ANALYSIS_GENERATION_PROMPT },
                     {
                         role: 'user',

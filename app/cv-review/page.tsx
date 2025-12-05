@@ -7,34 +7,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, FileText, Download } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { supabase } from "@/lib/supabase"
+import { useCVStore } from "@/hooks/useCVStore"
 
 export default function CVReviewPage() {
     const router = useRouter()
-    const [cvContent, setCvContent] = useState<string>('')
-    const [filename, setFilename] = useState<string>('')
-    const [isLoading, setIsLoading] = useState(true)
+    const { content: cvContent, filename, clear: clearCV } = useCVStore()
+    const [isMounted, setIsMounted] = useState(false)
 
     useEffect(() => {
-        // Retrieve CV content from localStorage
-        const content = localStorage.getItem('cvContent')
-        const name = localStorage.getItem('cvFilename')
-
-        if (!content) {
-            // No CV uploaded, redirect to home
-            router.push('/')
-            return
-        }
-
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCvContent(content)
-        setFilename(name || 'CV')
-        setIsLoading(false)
-    }, [router])
+        setIsMounted(true)
+    }, [])
+
+    useEffect(() => {
+        if (isMounted && !cvContent) {
+            router.push('/')
+        }
+    }, [isMounted, cvContent, router])
 
     const handleBack = () => {
-        // Clear local storage and go back
-        localStorage.removeItem('cvContent')
-        localStorage.removeItem('cvFilename')
+        // Clear store and go back
+        clearCV()
         router.push('/')
     }
 
@@ -63,7 +56,7 @@ export default function CVReviewPage() {
         }
     }
 
-    if (isLoading) {
+    if (!isMounted) {
         return (
             <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
                 <Navbar />
@@ -138,4 +131,3 @@ export default function CVReviewPage() {
         </div>
     )
 }
-

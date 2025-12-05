@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Upload } from "lucide-react"
+import { useCVStore } from "@/hooks/useCVStore"
 
 interface CVUploadProps {
     onUpload?: (content: string, filename: string) => void
@@ -12,6 +13,7 @@ interface CVUploadProps {
 
 export function CVUpload({ onUpload }: CVUploadProps) {
     const router = useRouter()
+    const { setCV } = useCVStore()
     const [isDragging, setIsDragging] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
 
@@ -38,9 +40,8 @@ export function CVUpload({ onUpload }: CVUploadProps) {
             // Read file content
             const content = await file.text()
 
-            // Store in localStorage for persistence through auth flow
-            localStorage.setItem('cvContent', content)
-            localStorage.setItem('cvFilename', file.name)
+            // Store in Zustand store (persisted to localStorage automatically)
+            setCV(content, file.name)
 
             // Call optional callback
             if (onUpload) {
@@ -55,7 +56,7 @@ export function CVUpload({ onUpload }: CVUploadProps) {
         } finally {
             setIsProcessing(false)
         }
-    }, [router, onUpload])
+    }, [router, onUpload, setCV])
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault()

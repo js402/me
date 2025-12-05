@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +11,7 @@ import { ArrowLeft, Loader2, Mail } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { supabase } from "@/lib/supabase"
 
-export default function AuthPage() {
+function AuthContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [isLoading, setIsLoading] = useState(false)
@@ -291,5 +291,20 @@ export default function AuthPage() {
                 </Tabs>
             </main>
         </div>
+    )
+}
+
+export default function AuthPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+                <Navbar />
+                <main className="flex-1 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                </main>
+            </div>
+        }>
+            <AuthContent />
+        </Suspense>
     )
 }

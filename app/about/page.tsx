@@ -1,8 +1,9 @@
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
 import { Mail, Github, Linkedin, Heart } from "lucide-react"
+import { Footer } from "@/components/footer"
+import { PageHeader } from "@/components/page-header"
 
 export default function AboutPage() {
     return (
@@ -10,17 +11,10 @@ export default function AboutPage() {
             <Navbar />
 
             <main className="flex-1">
-                {/* Hero Section */}
-                <section className="container mx-auto px-4 py-16 md:py-24">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                            About CV Career Insights
-                        </h1>
-                        <p className="text-xl text-muted-foreground">
-                            Empowering professionals to reach their full career potential through AI-driven CV analysis
-                        </p>
-                    </div>
-                </section>
+                <PageHeader
+                    title="About CV Career Insights"
+                    description="Empowering professionals to reach their full career potential through AI-driven CV analysis"
+                />
 
                 {/* Mission Section */}
                 <section className="container mx-auto px-4 py-8 max-w-4xl">
@@ -31,7 +25,7 @@ export default function AboutPage() {
                         <CardContent className="space-y-4 text-muted-foreground">
                             <p>
                                 We believe that every professional deserves access to quality
-                                career guidance. That's why we've built an AI-powered platform that analyzes your CV and
+                                career guidance. That&apos;s why we&apos;ve built an AI-powered platform that analyzes your CV and
                                 provides personalized, actionable insights to help you advance your career.
                             </p>
                             <p>
@@ -160,11 +154,7 @@ export default function AboutPage() {
                 </section>
             </main>
 
-            <footer className="border-t py-6">
-                <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-                    <p>&copy; 2024 CV Career Insights. All rights reserved.</p>
-                </div>
-            </footer>
+            <Footer />
         </div>
     )
 }
