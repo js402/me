@@ -67,8 +67,14 @@ export async function analyzeCV(
     })
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json()
-        throw new Error(error.error || 'Failed to analyze CV')
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to analyze CV (HTTP ${response.status})`);
+        }
     }
 
     return response.json()
@@ -89,8 +95,14 @@ export async function extractCVMetadata(
     })
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json()
-        throw new Error(error.error || 'Failed to extract CV metadata')
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to extract CV metadata (HTTP ${response.status})`);
+        }
     }
 
     return response.json()
@@ -123,8 +135,14 @@ export async function getUserCVMetadata(limit: number = 50): Promise<GetCVMetada
     })
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json()
-        throw new Error(error.error || 'Failed to fetch CV metadata')
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to fetch CV metadata (HTTP ${response.status})`);
+        }
     }
 
     return response.json()
@@ -147,8 +165,14 @@ export async function updateCVMetadata(
     })
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json()
-        throw new Error(error.error || 'Failed to update CV metadata')
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to update CV metadata (HTTP ${response.status})`);
+        }
     }
 
     const data = await response.json()
@@ -165,8 +189,14 @@ export async function deleteCVMetadata(metadataId: string): Promise<void> {
     })
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json()
-        throw new Error(error.error || 'Failed to delete CV metadata')
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to delete CV metadata (HTTP ${response.status})`);
+        }
     }
 }
 
@@ -216,8 +246,14 @@ export async function getUserCVBlueprint(): Promise<CVBlueprintResponse> {
     })
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json()
-        throw new Error(error.error || 'Failed to fetch CV blueprint')
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to fetch CV blueprint (HTTP ${response.status})`);
+        }
     }
 
     return response.json()
@@ -240,8 +276,20 @@ export async function processCVIntoBlueprint(
     })
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json()
-        throw new Error(error.error || 'Failed to process CV into blueprint')
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+
+            // Check if it's a setup error
+            if (errorData.setupRequired || errorMessage.includes('Database setup') || errorMessage.includes('migrations')) {
+                throw new Error(`Database Setup Required: ${errorMessage}${errorData.help ? ` - ${errorData.help}` : ''}`);
+            }
+
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to process CV into blueprint (HTTP ${response.status})`);
+        }
     }
 
     return response.json()
@@ -269,8 +317,20 @@ export async function processCV(cvContent: string): Promise<ProcessCVResponse> {
     });
 
     if (!response.ok) {
-        const error: AnalyzeCVError = await response.json();
-        throw new Error(error.error || 'Failed to process CV');
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+
+            // Check if it's a setup error
+            if (errorData.setupRequired || errorMessage.includes('Database setup') || errorMessage.includes('migrations')) {
+                throw new Error(`Database Setup Required: ${errorMessage}${errorData.help ? ` - ${errorData.help}` : ''}`);
+            }
+
+            throw new Error(errorMessage);
+        } catch (parseError) {
+            // If we can't parse the error response, use a generic message
+            throw new Error(`Failed to process CV (HTTP ${response.status})`);
+        }
     }
 
     return response.json();

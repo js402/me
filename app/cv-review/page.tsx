@@ -14,19 +14,23 @@ import { downloadTextFile } from "@/lib/download-helpers"
 import { processCV } from "@/lib/api-client"
 import { hashCV } from "@/lib/cv-cache"
 import { CVMetadataDisplay } from "@/components/cv-metadata-display"
+import { MissingInfoModal } from "@/components/analysis/MissingInfoModal"
 import type { ExtractedCVInfo } from "@/lib/api-client"
 
 export default function CVReviewPage() {
     const router = useRouter()
-    const { content: cvContent, filename, extractedInfo, setExtractedInfo, clear: clearCV } = useCVStore()
+    const { content: cvContent, filename, extractedInfo, setExtractedInfo, appendSupplementalInfo, clear: clearCV } = useCVStore()
     const { hasProAccess } = useSubscription()
     const [isMounted, setIsMounted] = useState(false)
     const [isExtractingMetadata, setIsExtractingMetadata] = useState(false)
     const [metadataError, setMetadataError] = useState<string>('')
     const [extractionAttempted, setExtractionAttempted] = useState(false)
+    const [missingInfoQuestions, setMissingInfoQuestions] = useState<string[]>([])
+    const [isMissingInfoModalOpen, setIsMissingInfoModalOpen] = useState(false)
+    const [isProcessingSupplementalInfo, setIsProcessingSupplementalInfo] = useState(false)
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setIsMounted(true)
     }, [])
 
@@ -59,7 +63,26 @@ export default function CVReviewPage() {
                     setExtractedInfo(result.extractedInfo)
 
                     if (result.extractionStatus === 'incomplete') {
-                        setMetadataError('CV appears to be incomplete. Some information may be missing, but you can still proceed with analysis.')
+                        // Check if we have questions from the metadata extraction
+                        // We need to call the extract API directly to get questions
+                        try {
+                            const metadataResponse = await fetch('/api/extract-cv-metadata', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ cvContent })
+                            })
+                            const metadataResult = await metadataResponse.json()
+
+                            if (metadataResult.status === 'incomplete' && metadataResult.questions) {
+                                setMissingInfoQuestions(metadataResult.questions)
+                                setIsMissingInfoModalOpen(true)
+                            } else {
+                                setMetadataError('CV appears to be incomplete. Some information may be missing, but you can still proceed with analysis.')
+                            }
+                        } catch (err) {
+                            console.error('Error fetching missing info questions:', err)
+                            setMetadataError('CV appears to be incomplete. Some information may be missing, but you can still proceed with analysis.')
+                        }
                     }
 
                     console.log('CV processed successfully', {
@@ -107,6 +130,34 @@ export default function CVReviewPage() {
 
     const handleDownload = () => {
         downloadTextFile(cvContent, filename)
+    }
+
+    const handleMissingInfoSubmit = async (answers: string[]) => {
+        setIsProcessingSupplementalInfo(true)
+        setIsMissingInfoModalOpen(false)
+
+        try {
+            // Append supplemental info to CV store
+            appendSupplementalInfo(missingInfoQuestions, answers)
+
+            // Clear extracted info to trigger re-processing with updated CV
+            setExtractedInfo({
+                name: '',
+                contactInfo: '',
+                experience: [],
+                skills: [],
+                education: []
+            })
+            setExtractionAttempted(false)
+            setMetadataError('')
+
+            // The useEffect will automatically re-process the CV with the new content
+        } catch (error) {
+            console.error('Error processing supplemental info:', error)
+            setMetadataError('Failed to process supplemental information.')
+        } finally {
+            setIsProcessingSupplementalInfo(false)
+        }
     }
 
     const handleContinue = async () => {
@@ -202,7 +253,7 @@ export default function CVReviewPage() {
 
                                 <TabsContent value="preview" className="mt-4">
                                     <div className="prose dark:prose-invert max-w-none">
-                                        <pre className="whitespace-pre-wrap font-mono text-sm bg-slate-100 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[500px]">
+                                        <pre className="whitespace-pre-wrap break-words font-mono text-sm bg-slate-100 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[500px]">
                                             {cvContent}
                                         </pre>
                                     </div>
@@ -210,7 +261,7 @@ export default function CVReviewPage() {
 
                                 <TabsContent value="raw" className="mt-4">
                                     <div className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[500px]">
-                                        <pre className="whitespace-pre-wrap font-mono text-xs text-slate-700 dark:text-slate-300">
+                                        <pre className="whitespace-pre-wrap break-words font-mono text-xs text-slate-700 dark:text-slate-300">
                                             {cvContent}
                                         </pre>
                                     </div>
@@ -249,6 +300,18 @@ export default function CVReviewPage() {
                         {isExtractingMetadata ? 'Extracting...' : 'Continue to Analysis'}
                     </Button>
                 </div>
+
+                {/* Missing Info Modal */}
+                <MissingInfoModal
+                    isOpen={isMissingInfoModalOpen}
+                    questions={missingInfoQuestions}
+                    onSubmit={handleMissingInfoSubmit}
+                    onCancel={() => {
+                        setIsMissingInfoModalOpen(false)
+                        setMissingInfoQuestions([])
+                    }}
+                    isSubmitting={isProcessingSupplementalInfo}
+                />
             </main>
         </div>
     )

@@ -3,20 +3,20 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Sparkles, Loader2, Download, FileText } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { supabase } from "@/lib/supabase"
 import { analyzeCV } from "@/lib/api-client"
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { useCVStore } from "@/hooks/useCVStore"
 import { downloadTextFile } from "@/lib/download-helpers"
 import { MissingInfoModal } from "@/components/analysis/MissingInfoModal"
+import { AnalysisStatus } from "@/components/analysis/AnalysisStatus"
+import { AnalysisResults } from "@/components/analysis/AnalysisResults"
+import { JobMatchNavigation } from "@/components/analysis/JobMatchNavigation"
 
 export default function AnalysisPage() {
     const router = useRouter()
-    const { content: cvContent, filename, analysis, setAnalysis, clear: clearCV } = useCVStore()
+    const { content: cvContent, filename, analysis, setAnalysis, appendSupplementalInfo, clear: clearCV } = useCVStore()
     const [isLoading, setIsLoading] = useState(true)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [error, setError] = useState<string>('')
@@ -63,18 +63,13 @@ export default function AnalysisPage() {
         setIsMissingInfoModalOpen(false)
         setIsAnalyzing(true)
 
-        // Combine original content with answers
-        const additionalContext = `\n\nADDITIONAL USER CONTEXT:\n${answers.map((a, i) => `Q: ${missingInfoQuestions[i]}\nA: ${a}`).join('\n')}`
-        const augmentedContent = cvContent + additionalContext
-
         try {
-            // We pass the augmented content as a "custom prompt" or just append it to the CV content
-            // Since the API takes cvContent, we'll just send the augmented content as the CV
-            // But we should probably update the store too? Or just use it for this request?
-            // Let's just send it for this request.
-            const result = await analyzeCV(augmentedContent)
+            // Append supplemental info to CV store (persists the data)
+            appendSupplementalInfo(missingInfoQuestions, answers)
 
-            // If it's still incomplete, we might want to loop, but for now let's assume it's good or just show what we got
+            // Re-analyze with the updated CV content
+            const result = await analyzeCV(cvContent)
+
             if (result.status === 'invalid') {
                 setError(result.message || 'Invalid CV format')
             } else {
@@ -159,126 +154,24 @@ export default function AnalysisPage() {
                 </div>
 
                 {/* Analysis Status */}
-                {isAnalyzing && (
-                    <Card className="mb-6 border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-3">
-                                <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
-                                <div>
-                                    <p className="font-semibold">Analyzing your CV...</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Checking cache and generating insights
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Cache Status Indicator */}
-                {fromCache && analysis && (
-                    <Card className="mb-6 border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-green-500/10">
-                                    <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-green-700 dark:text-green-300">Cached Result</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        This CV was previously analyzed{cachedAt && ` on ${new Date(cachedAt).toLocaleDateString()}`}
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Error State */}
-                {error && (
-                    <Card className="mb-6 border-red-500/50 bg-red-50/50 dark:bg-red-950/20">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-red-500/10">
-                                    <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-red-600 dark:text-red-400">Analysis Failed</p>
-                                    <p className="text-sm text-muted-foreground">{error}</p>
-                                </div>
-                            </div>
-                            <Button
-                                onClick={() => startAnalysis(cvContent)}
-                                className="mt-4"
-                                variant="outline"
-                            >
-                                Try Again
-                            </Button>
-                        </CardContent>
-                    </Card>
-                )}
+                <AnalysisStatus
+                    isAnalyzing={isAnalyzing}
+                    error={error}
+                    fromCache={fromCache}
+                    cachedAt={cachedAt}
+                    onRetry={() => startAnalysis(cvContent)}
+                />
 
                 {/* Analysis Results */}
                 {analysis && (
                     <>
-                        <Card>
-                            <CardHeader className="border-b">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20">
-                                            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <CardTitle className="text-xl">Career Analysis</CardTitle>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleDownload}
-                                        className="gap-2"
-                                    >
-                                        <Download className="h-4 w-4" />
-                                        Download
-                                    </Button>
-                                </div>
-                            </CardHeader>
-
-                            <CardContent className="p-6">
-                                <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed">
-                                    <ReactMarkdown
-                                        remarkPlugins={[remarkGfm]}
-                                    >
-                                        {analysis}
-                                    </ReactMarkdown>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <AnalysisResults
+                            analysis={analysis}
+                            onDownload={handleDownload}
+                        />
 
                         {/* Job Match Analysis Navigation */}
-                        <Card className="mt-8 border-none shadow-lg bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 overflow-hidden relative group cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/analysis/job-match')}>
-                            <div className="absolute top-0 right-0 p-4">
-                                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-sm">
-                                    <Sparkles className="h-3 w-3" />
-                                    PREMIUM
-                                </div>
-                            </div>
-
-                            <CardContent className="p-8 flex items-center justify-between">
-                                <div className="flex items-center gap-6">
-                                    <div className="p-4 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform duration-300">
-                                        <FileText className="h-8 w-8" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-2xl font-bold mb-2">Job Match Analysis</h3>
-                                        <p className="text-muted-foreground">
-                                            See how well your CV matches a specific job description.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="hidden sm:flex items-center justify-center h-12 w-12 rounded-full bg-white dark:bg-slate-800 shadow-sm group-hover:translate-x-2 transition-transform duration-300">
-                                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <JobMatchNavigation />
                     </>
                 )}
 

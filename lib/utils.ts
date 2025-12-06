@@ -51,7 +51,7 @@ export function parseContactInfoString(contactInfo: string): ContactInfo {
   }
 
   // Location extraction (remaining text, usually at the end)
-  let locationText = contactString
+  const locationText = contactString
     .replace(parsed.email || '', '')
     .replace(parsed.phone || '', '')
     .replace(/linkedin\.com\/in\/[a-zA-Z0-9-]+/i, '')

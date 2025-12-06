@@ -9,8 +9,7 @@ const mockSupabase = {
 describe('CV Blueprint Merger', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Reset RPC mock for each test
-        mockSupabase.rpc.mockReset()
+        // Set up default RPC mock for each test
         mockSupabase.rpc.mockResolvedValue({ data: 'blueprint-123', error: null })
     })
 
@@ -43,25 +42,31 @@ describe('CV Blueprint Merger', () => {
             mockSupabase.from.mockImplementation((table) => {
                 if (table === 'cv_blueprints') {
                     return {
-                        select: vi.fn().mockReturnThis(),
-                        eq: vi.fn().mockReturnThis(),
-                        single: vi.fn().mockResolvedValueOnce({ data: existingBlueprint, error: null })
-                            .mockResolvedValueOnce({ data: { ...existingBlueprint, blueprint_version: 2 }, error: null }),
+                        select: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null })
+                            })
+                        }),
                         update: vi.fn().mockReturnValue({
-                            eq: vi.fn().mockReturnThis(),
-                            select: vi.fn().mockReturnThis(),
-                            single: vi.fn().mockResolvedValue({ data: { ...existingBlueprint, blueprint_version: 2 }, error: null })
+                            eq: vi.fn().mockReturnValue({
+                                select: vi.fn().mockReturnValue({
+                                    single: vi.fn().mockResolvedValue({ data: { ...existingBlueprint, blueprint_version: 2 }, error: null })
+                                })
+                            })
                         })
                     }
                 }
                 return {}
             })
 
-            // Ensure RPC mock is still set
-            mockSupabase.rpc.mockResolvedValue({ data: 'blueprint-123', error: null })
-
-            // Mock change recording
-            mockSupabase.rpc.mockResolvedValue(null)
+            // Mock change recording - the RPC should return different values for different calls
+            mockSupabase.rpc.mockImplementation((functionName) => {
+                if (functionName === 'get_or_create_cv_blueprint') {
+                    return Promise.resolve({ data: 'blueprint-123', error: null })
+                }
+                // For change recording
+                return Promise.resolve(null)
+            })
 
             const result = await mergeCVIntoBlueprint(mockSupabase as any, 'user_123', newCV, 'cv_hash_123')
 
@@ -95,35 +100,29 @@ describe('CV Blueprint Merger', () => {
                 data_completeness: expect.any(Number)
             }
 
-            // Mock no existing blueprint
-            const blueprintQuery = {
-                select: vi.fn().mockReturnThis(),
-                eq: vi.fn().mockReturnThis(),
-                single: vi.fn().mockResolvedValue({ data: null, error: null })
-            }
-
+            // Mock no existing blueprint initially
             mockSupabase.from.mockImplementation((table) => {
                 if (table === 'cv_blueprints') {
                     return {
-                        select: vi.fn().mockReturnThis(),
-                        eq: vi.fn().mockReturnThis(),
-                        single: vi.fn().mockResolvedValueOnce({ data: null, error: null })
-                            .mockResolvedValueOnce({ data: newBlueprint, error: null }),
+                        select: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                single: vi.fn().mockResolvedValue({ data: null, error: null })
+                            })
+                        }),
                         update: vi.fn().mockReturnValue({
-                            eq: vi.fn().mockReturnThis(),
-                            select: vi.fn().mockReturnThis(),
-                            single: vi.fn().mockResolvedValue({ data: newBlueprint, error: null })
+                            eq: vi.fn().mockReturnValue({
+                                select: vi.fn().mockReturnValue({
+                                    single: vi.fn().mockResolvedValue({ data: newBlueprint, error: null })
+                                })
+                            })
                         })
                     }
                 }
                 return {}
             })
 
-            // Ensure RPC mock is still set
-            mockSupabase.rpc.mockResolvedValue({ data: 'blueprint-123', error: null })
-
-            // Mock blueprint creation via RPC
-            mockSupabase.rpc.mockResolvedValue('new_blueprint_123')
+            // Mock RPC to return blueprint ID
+            mockSupabase.rpc.mockResolvedValue({ data: 'new_blueprint_123', error: null })
 
             const result = await mergeCVIntoBlueprint(mockSupabase as any, 'user_123', newCV, 'cv_hash_123')
 
@@ -134,9 +133,15 @@ describe('CV Blueprint Merger', () => {
 
         it('should handle skills deduplication and confidence updates', async () => {
             const existingBlueprint = {
+                id: 'blueprint_123',
                 profile_data: {
+                    personal: { name: 'John Doe' },
+                    contact: {},
+                    experience: [],
+                    education: [],
                     skills: [{ name: 'JavaScript', confidence: 0.6, sources: ['cv1'] }]
-                }
+                },
+                total_cvs_processed: 1
             }
 
             const newCV = {
@@ -147,16 +152,25 @@ describe('CV Blueprint Merger', () => {
                 education: []
             }
 
-            mockSupabase.from.mockImplementation((table) => ({
-                select: vi.fn().mockReturnThis(),
-                eq: vi.fn().mockReturnThis(),
-                single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null }),
-                update: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnThis(),
-                    select: vi.fn().mockReturnThis(),
-                    single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null })
-                })
-            }))
+            mockSupabase.from.mockImplementation((table) => {
+                if (table === 'cv_blueprints') {
+                    return {
+                        select: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null })
+                            })
+                        }),
+                        update: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                select: vi.fn().mockReturnValue({
+                                    single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null })
+                                })
+                            })
+                        })
+                    }
+                }
+                return {}
+            })
 
             // Ensure RPC mock is still set
             mockSupabase.rpc.mockResolvedValue({ data: 'blueprint-123', error: null })
@@ -169,14 +183,20 @@ describe('CV Blueprint Merger', () => {
 
         it('should intelligently merge experience with deduplication', async () => {
             const existingBlueprint = {
+                id: 'blueprint_123',
                 profile_data: {
+                    personal: { name: 'John Doe' },
+                    contact: {},
                     experience: [{
                         role: 'Developer',
                         company: 'Tech Corp',
                         duration: '2020-2022',
                         confidence: 0.9
-                    }]
-                }
+                    }],
+                    education: [],
+                    skills: []
+                },
+                total_cvs_processed: 1
             }
 
             const newCV = {
@@ -190,16 +210,25 @@ describe('CV Blueprint Merger', () => {
                 education: []
             }
 
-            mockSupabase.from.mockImplementation((table) => ({
-                select: vi.fn().mockReturnThis(),
-                eq: vi.fn().mockReturnThis(),
-                single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null }),
-                update: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnThis(),
-                    select: vi.fn().mockReturnThis(),
-                    single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null })
-                })
-            }))
+            mockSupabase.from.mockImplementation((table) => {
+                if (table === 'cv_blueprints') {
+                    return {
+                        select: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null })
+                            })
+                        }),
+                        update: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                select: vi.fn().mockReturnValue({
+                                    single: vi.fn().mockResolvedValue({ data: existingBlueprint, error: null })
+                                })
+                            })
+                        })
+                    }
+                }
+                return {}
+            })
 
             // Ensure RPC mock is still set
             mockSupabase.rpc.mockResolvedValue({ data: 'blueprint-123', error: null })

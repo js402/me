@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { hasProAccess } from '@/lib/subscription'
 import { rateLimit } from '@/middleware/rateLimit'
+import { validateInput, careerGuidanceSchema } from '@/lib/validation'
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { hashCV } from '@/lib/cv-cache'
 
@@ -10,28 +11,6 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 })
 
-// Retry helper function
-async function retryWithBackoff<T>(
-    fn: () => Promise<T>,
-    maxRetries: number = 1,
-    stepName: string = 'operation'
-): Promise<T> {
-    let lastError: Error | null = null
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-            return await fn()
-        } catch (error) {
-            lastError = error as Error
-            if (attempt < maxRetries) {
-                console.log(`${stepName} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`)
-                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
-            }
-        }
-    }
-
-    throw lastError || new Error(`${stepName} failed after ${maxRetries + 1} attempts`)
-}
 
 // Step 1: Extract Career Information
 const CAREER_EXTRACTION_PROMPT = `You are a career information extractor. Analyze the CV and extract key career information.
@@ -102,7 +81,7 @@ Return JSON:
 export async function POST(req: NextRequest) {
     try {
         const ip = req.headers.get('x-forwarded-for') || 'unknown'
-        if (!rateLimit(ip, 5, 60 * 1000)) { // 5 requests per minute
+        if (!(await rateLimit(ip, 5, 60 * 1000))) { // 5 requests per minute
             return NextResponse.json(
                 { error: 'Too many requests. Please try again later.' },
                 { status: 429 }
@@ -127,14 +106,18 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const { cvContent } = await req.json()
+        const body = await req.json()
 
-        if (!cvContent) {
+        // Validate input using Zod schema
+        const inputValidation = validateInput(careerGuidanceSchema, body)
+        if (!inputValidation.success) {
             return NextResponse.json(
-                { error: 'CV content is required' },
+                { error: 'Validation failed', details: inputValidation.error },
                 { status: 400 }
             )
         }
+
+        const { cvContent } = inputValidation.data
 
         // Check cache first
         const cvHash = await hashCV(cvContent)
@@ -153,108 +136,66 @@ export async function POST(req: NextRequest) {
             })
         }
 
-        // STEP 1: Extract career information (with smart retry)
-        let careerInfo: Record<string, unknown> | undefined
-        let extractionAttempt = 0
-        const maxExtractionAttempts = 2
-
-        while (extractionAttempt < maxExtractionAttempts) {
-            try {
-                const messages: ChatCompletionMessageParam[] = [
-                    { role: 'system', content: CAREER_EXTRACTION_PROMPT },
-                    {
-                        role: 'user', content: `Extract career information from this CV:
+        // STEP 1: Extract career information
+        const messages: ChatCompletionMessageParam[] = [
+            { role: 'system', content: CAREER_EXTRACTION_PROMPT },
+            {
+                role: 'user', content: `Extract career information from this CV:
 
 ${cvContent}`
-                    }
-                ]
-
-                const extractionCompletion = await openai.chat.completions.create({
-                    model: 'gpt-4o-mini',
-                    messages,
-                    response_format: { type: 'json_object' },
-                    temperature: 0.3,
-                })
-
-                careerInfo = JSON.parse(extractionCompletion.choices[0].message.content || '{}')
-                if (careerInfo && Object.keys(careerInfo).length > 0) {
-                    break // Success!
-                }
-
-                extractionAttempt++
-                if (extractionAttempt < maxExtractionAttempts) {
-                    console.log(`Career extraction failed (attempt ${extractionAttempt}/${maxExtractionAttempts}), retrying...`)
-                    await new Promise(resolve => setTimeout(resolve, 1000))
-                }
-            } catch (error) {
-                extractionAttempt++
-                if (extractionAttempt >= maxExtractionAttempts) {
-                    throw error
-                }
-                console.log(`Career extraction error (attempt ${extractionAttempt}/${maxExtractionAttempts}), retrying...`)
-                await new Promise(resolve => setTimeout(resolve, 1000))
             }
+        ]
+
+        const extractionCompletion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages,
+            response_format: { type: 'json_object' },
+            temperature: 0.3,
+        })
+
+        const careerInfo = JSON.parse(extractionCompletion.choices[0].message.content || '{}')
+
+        if (!careerInfo || Object.keys(careerInfo).length === 0) {
+            throw new Error('Failed to extract career information')
         }
 
-        // STEP 2: Generate structured guidance (with smart retry)
-        let guidance: Record<string, unknown> | undefined
-        let guidanceAttempt = 0
-        const maxGuidanceAttempts = 2
-
-        while (guidanceAttempt < maxGuidanceAttempts) {
-            try {
-                const messages: ChatCompletionMessageParam[] = [
-                    { role: 'system', content: CAREER_GUIDANCE_PROMPT },
-                    {
-                        role: 'user',
-                        content: `Generate career guidance for:
+        // STEP 2: Generate structured guidance
+        const guidanceMessages: ChatCompletionMessageParam[] = [
+            { role: 'system', content: CAREER_GUIDANCE_PROMPT },
+            {
+                role: 'user',
+                content: `Generate career guidance for:
 ${JSON.stringify(careerInfo, null, 2)}`
-                    }
-                ]
-
-                const guidanceCompletion = await openai.chat.completions.create({
-                    model: 'gpt-4o-mini',
-                    messages,
-                    response_format: { type: 'json_object' },
-                    temperature: 0.7,
-                })
-
-                guidance = JSON.parse(guidanceCompletion.choices[0].message.content || '{}')
-                if (guidance && Object.keys(guidance).length > 0) {
-                    break // Success!
-                }
-
-                guidanceAttempt++
-                if (guidanceAttempt < maxGuidanceAttempts) {
-                    console.log(`Guidance generation failed (attempt ${guidanceAttempt}/${maxGuidanceAttempts}), retrying...`)
-                    await new Promise(resolve => setTimeout(resolve, 1000))
-                }
-            } catch (error) {
-                guidanceAttempt++
-                if (guidanceAttempt >= maxGuidanceAttempts) {
-                    throw error
-                }
-                console.log(`Guidance generation error (attempt ${guidanceAttempt}/${maxGuidanceAttempts}), retrying...`)
-                await new Promise(resolve => setTimeout(resolve, 1000))
             }
+        ]
+
+        const guidanceCompletion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: guidanceMessages,
+            response_format: { type: 'json_object' },
+            temperature: 0.7,
+        })
+
+        const guidance = JSON.parse(guidanceCompletion.choices[0].message.content || '{}')
+
+        if (!guidance || Object.keys(guidance).length === 0) {
+            throw new Error('Failed to generate career guidance')
         }
 
-        // STEP 3: Validate output structure (with retry)
-        const validation = await retryWithBackoff(async () => {
-            const validationCompletion = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [
-                    { role: 'system', content: OUTPUT_VALIDATION_PROMPT },
-                    {
-                        role: 'user', content: `Validate this guidance:
+        // STEP 3: Validate output structure
+        const validationCompletion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: OUTPUT_VALIDATION_PROMPT },
+                {
+                    role: 'user', content: `Validate this guidance:
 ${JSON.stringify(guidance, null, 2)}`
-                    }
-                ],
-                response_format: { type: 'json_object' },
-                temperature: 0.1,
-            })
-            return JSON.parse(validationCompletion.choices[0].message.content || '{}')
-        }, 1, 'Guidance Validation')
+                }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.1,
+        })
+        const validation = JSON.parse(validationCompletion.choices[0].message.content || '{}')
 
         if (!validation.isValid) {
             console.warn('Guidance validation issues:', validation)

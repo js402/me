@@ -13,12 +13,14 @@ import { supabase } from "@/lib/supabase"
 import { useSubscription } from "@/hooks/useSubscription"
 import { getUserCVMetadata, updateCVMetadata, deleteCVMetadata } from "@/lib/api-client"
 import { CVMetadataEditForm } from "@/components/cv-metadata-edit-form"
+import { BlueprintViewer } from "@/components/blueprint-viewer"
 import type { CVMetadataResponse, ExtractedCVInfo } from "@/lib/api-client"
 
 export default function CVMetadataPage() {
     const router = useRouter()
     const { hasProAccess } = useSubscription()
     const [metadata, setMetadata] = useState<CVMetadataResponse[]>([])
+    const [blueprint, setBlueprint] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string>('')
     const [successMessage, setSuccessMessage] = useState<string>('')
@@ -51,6 +53,13 @@ export default function CVMetadataPage() {
         try {
             const result = await getUserCVMetadata()
             setMetadata(result.metadata)
+
+            // Also fetch blueprint
+            const blueprintResponse = await fetch('/api/blueprint')
+            if (blueprintResponse.ok) {
+                const blueprintData = await blueprintResponse.json()
+                setBlueprint(blueprintData)
+            }
         } catch (error) {
             console.error('Failed to load metadata:', error)
             setError('Failed to load CV metadata')
@@ -188,6 +197,27 @@ export default function CVMetadataPage() {
                     </Card>
                 )}
 
+                {/* Blueprint Section */}
+                <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-2xl font-bold">Your Professional Blueprint</h2>
+                            <p className="text-muted-foreground text-sm mt-1">
+                                Consolidated view of your CV data used for job matching and tailoring
+                            </p>
+                        </div>
+                    </div>
+                    <BlueprintViewer blueprint={blueprint} />
+                </div>
+
+                {/* Individual CV Metadata Section */}
+                <div className="mb-4">
+                    <h2 className="text-2xl font-bold">Individual CV Uploads</h2>
+                    <p className="text-muted-foreground text-sm mt-1">
+                        Manage your uploaded CV files and their extracted metadata
+                    </p>
+                </div>
+
                 {/* Metadata List */}
                 {metadata.length === 0 ? (
                     <Card>
@@ -196,7 +226,7 @@ export default function CVMetadataPage() {
                                 <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                                 <h3 className="text-xl font-semibold mb-2">No CV Metadata Found</h3>
                                 <p className="text-muted-foreground mb-6">
-                                    You haven't uploaded any CVs yet. Upload a CV to get started with metadata management.
+                                    You haven&apos;t uploaded any CVs yet. Upload a CV to get started with metadata management.
                                 </p>
                                 {hasProAccess ? (
                                     <Button onClick={() => router.push('/')}>
@@ -255,9 +285,9 @@ export default function CVMetadataPage() {
                                                 {typeof item.extracted_info.contactInfo === 'string'
                                                     ? (item.extracted_info.contactInfo || 'Not available')
                                                     : (item.extracted_info.contactInfo?.email ||
-                                                       item.extracted_info.contactInfo?.phone ||
-                                                       item.extracted_info.contactInfo?.location ||
-                                                       'Not available')}
+                                                        item.extracted_info.contactInfo?.phone ||
+                                                        item.extracted_info.contactInfo?.location ||
+                                                        'Not available')}
                                             </span>
                                         </div>
 
@@ -336,19 +366,19 @@ export default function CVMetadataPage() {
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Delete CV Metadata</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        This will permanently delete the metadata for "{item.extracted_info.name || 'this CV'}".
+                                                        This will permanently delete the metadata for &quot;{item.extracted_info.name || 'this CV'}&quot;.
                                                         This action cannot be undone.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    onClick={() => handleDelete(item.id)}
-                                                    className="bg-red-600 hover:bg-red-700"
-                                                    disabled={isDeleting === item.id}
-                                                >
-                                                    {isDeleting === item.id ? 'Deleting...' : 'Delete'}
-                                                </AlertDialogAction>
+                                                    <AlertDialogAction
+                                                        onClick={() => handleDelete(item.id)}
+                                                        className="bg-red-600 hover:bg-red-700"
+                                                        disabled={isDeleting === item.id}
+                                                    >
+                                                        {isDeleting === item.id ? 'Deleting...' : 'Delete'}
+                                                    </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>

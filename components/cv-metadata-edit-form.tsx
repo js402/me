@@ -207,7 +207,7 @@ export function CVMetadataEditForm({ metadata, onSave, onCancel }: CVMetadataEdi
 
                                 {formData.skills.length === 0 ? (
                                     <p className="text-muted-foreground text-center py-4">
-                                        No skills added yet. Click "Add Skill" to get started.
+                                        No skills added yet. Click &quot;Add Skill&quot; to get started.
                                     </p>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -329,7 +329,7 @@ export function CVMetadataEditForm({ metadata, onSave, onCancel }: CVMetadataEdi
                         <CardContent>
                             {formData.experience.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-8">
-                                    No experience added yet. Click "Add Experience" to get started.
+                                    No experience added yet. Click &quot;Add Experience&quot; to get started.
                                 </p>
                             ) : (
                                 <div className="space-y-6">
@@ -400,7 +400,7 @@ export function CVMetadataEditForm({ metadata, onSave, onCancel }: CVMetadataEdi
                         <CardContent>
                             {formData.education.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-8">
-                                    No education added yet. Click "Add Education" to get started.
+                                    No education added yet. Click &quot;Add Education&quot; to get started.
                                 </p>
                             ) : (
                                 <div className="space-y-6">

@@ -13,9 +13,9 @@ interface ValidationResult {
     extractedInfo?: {
         name: string
         contactInfo: string
-        experience: Array<{role: string, company: string, duration: string}>
+        experience: Array<{ role: string, company: string, duration: string }>
         skills: string[]
-        education: Array<{degree: string, institution: string, year: string}>
+        education: Array<{ degree: string, institution: string, year: string }>
     }
     issues?: string[]
 }
@@ -72,53 +72,20 @@ export const POST = withAuth(async (request, { supabase, user }) => {
             })
         }
 
-        // STEP 1: Validate and extract CV structure (with smart retry)
-        let validation: ValidationResult | undefined
-        let validationAttempt = 0
-        const maxValidationAttempts = 2
+        // STEP 1: Validate and extract CV structure
+        const messages: ChatCompletionMessageParam[] = [
+            { role: 'system', content: INPUT_VALIDATION_PROMPT },
+            { role: 'user', content: `Validate this CV:\n\n${cvContent}` }
+        ]
 
-        while (validationAttempt < maxValidationAttempts) {
-            try {
-                const messages: ChatCompletionMessageParam[] = [
-                    { role: 'system', content: INPUT_VALIDATION_PROMPT },
-                    { role: 'user', content: `Validate this CV:\n\n${cvContent}` }
-                ]
+        const validationCompletion = await openai.chat.completions.create({
+            model: DEFAULT_MODEL,
+            messages,
+            response_format: { type: 'json_object' },
+            temperature: 0.3,
+        })
 
-                // If this is a retry, add the previous error as context
-                if (validationAttempt > 0 && validation) {
-                    messages.push({
-                        role: 'assistant',
-                        content: JSON.stringify(validation)
-                    })
-                    messages.push({
-                        role: 'user',
-                        content: `The previous validation had issues. Please try again.`
-                    })
-                }
-
-                const validationCompletion = await openai.chat.completions.create({
-                    model: DEFAULT_MODEL,
-                    messages,
-                    response_format: { type: 'json_object' },
-                    temperature: 0.3,
-                })
-
-                validation = JSON.parse(validationCompletion.choices[0]?.message?.content || '{}') as ValidationResult
-
-                if (validation?.status) {
-                    break // Success!
-                }
-
-                validationAttempt++
-            } catch (error) {
-                validationAttempt++
-                if (validationAttempt >= maxValidationAttempts) {
-                    throw error
-                }
-                console.log(`CV validation error (attempt ${validationAttempt}/${maxValidationAttempts}), retrying...`)
-                await new Promise(resolve => setTimeout(resolve, 1000))
-            }
-        }
+        const validation = JSON.parse(validationCompletion.choices[0]?.message?.content || '{}') as ValidationResult
 
         // Handle Invalid CVs
         if (validation?.status === 'invalid') {

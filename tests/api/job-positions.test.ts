@@ -9,15 +9,51 @@ vi.mock('@/lib/supabase-server', () => ({
     createServerSupabaseClient: vi.fn()
 }))
 
+// Mock Subscription check
+vi.mock('@/lib/subscription', () => ({
+    hasProAccess: vi.fn().mockResolvedValue(true)
+}))
+
 const mockSession = {
     user: { id: 'user_123', email: 'test@example.com' }
 }
 
 const mockSupabase = {
     auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: mockSession.user }, error: null }),
         getSession: vi.fn().mockResolvedValue({ data: { session: mockSession } })
     },
-    from: vi.fn()
+    from: vi.fn().mockImplementation((tableName) => {
+        if (tableName === 'subscriptions') {
+            const selectResult = {
+                eq: vi.fn().mockReturnValue({
+                    order: vi.fn().mockReturnValue({
+                        limit: vi.fn().mockReturnValue({
+                            maybeSingle: vi.fn().mockResolvedValue({ data: { status: 'active' }, error: null })
+                        })
+                    })
+                })
+            }
+            return {
+                select: vi.fn().mockReturnValue(selectResult)
+            }
+        }
+        return {
+            select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnThis(),
+                order: vi.fn().mockResolvedValue({ data: [], error: null }),
+                single: vi.fn().mockResolvedValue({ data: null, error: null }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+            }),
+            insert: vi.fn().mockReturnThis(),
+            update: vi.fn().mockReturnThis(),
+            delete: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+        }
+    })
 }
 
 describe('Job Positions API', () => {
@@ -44,7 +80,13 @@ describe('Job Positions API', () => {
                 })
             })
 
-            mockSupabase.from.mockReturnValue({ insert: mockInsert })
+            mockSupabase.from.mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnThis(),
+                    single: vi.fn().mockResolvedValue({ data: null, error: null })
+                }),
+                insert: mockInsert
+            })
 
             const response = await POST(mockRequest)
             const data = await response.json()
@@ -123,7 +165,10 @@ describe('Job Positions API', () => {
                 return {}
             })
 
-            const response = await GET_ONE({} as NextRequest, { params: Promise.resolve({ id: 'pos_123' }) })
+            const mockRequest = {
+                nextUrl: { pathname: '/api/job-positions/pos_123' }
+            } as unknown as NextRequest
+            const response = await GET_ONE(mockRequest, { params: Promise.resolve({ id: 'pos_123' }) })
             const data = await response.json()
 
             expect(response.status).toBe(200)
@@ -134,9 +179,6 @@ describe('Job Positions API', () => {
     describe('PATCH /api/job-positions/[id]', () => {
         it('should update position', async () => {
             const mockBody = { status: 'applied' }
-            const mockRequest = {
-                json: vi.fn().mockResolvedValue(mockBody)
-            } as unknown as NextRequest
 
             mockSupabase.from.mockReturnValue({
                 update: vi.fn().mockReturnValue({
@@ -150,7 +192,11 @@ describe('Job Positions API', () => {
                 })
             })
 
-            const response = await PATCH(mockRequest, { params: Promise.resolve({ id: 'pos_123' }) })
+            const patchMockRequest = {
+                json: vi.fn().mockResolvedValue(mockBody),
+                nextUrl: { pathname: '/api/job-positions/pos_123' }
+            } as unknown as NextRequest
+            const response = await PATCH(patchMockRequest, { params: Promise.resolve({ id: 'pos_123' }) })
             const data = await response.json()
 
             expect(response.status).toBe(200)
@@ -158,10 +204,7 @@ describe('Job Positions API', () => {
         })
 
         it('should update submitted_cv_id', async () => {
-            const mockBody = { submitted_cv_id: 'cv_456', status: 'applied' }
-            const mockRequest = {
-                json: vi.fn().mockResolvedValue(mockBody)
-            } as unknown as NextRequest
+            const mockBody = { submitted_cv_id: '123e4567-e89b-12d3-a456-426614174000', status: 'applied' }
 
             mockSupabase.from.mockReturnValue({
                 update: vi.fn().mockReturnValue({
@@ -169,7 +212,7 @@ describe('Job Positions API', () => {
                         eq: vi.fn().mockReturnValue({
                             select: vi.fn().mockReturnValue({
                                 single: vi.fn().mockResolvedValue({
-                                    data: { id: 'pos_123', status: 'applied', submitted_cv_id: 'cv_456' },
+                                    data: { id: 'pos_123', status: 'applied', submitted_cv_id: '123e4567-e89b-12d3-a456-426614174000' },
                                     error: null
                                 })
                             })
@@ -178,17 +221,26 @@ describe('Job Positions API', () => {
                 })
             })
 
-            const response = await PATCH(mockRequest, { params: Promise.resolve({ id: 'pos_123' }) })
+            const patchMockRequest = {
+                json: vi.fn().mockResolvedValue(mockBody),
+                nextUrl: { pathname: '/api/job-positions/pos_123' }
+            } as unknown as NextRequest
+            const response = await PATCH(patchMockRequest, { params: Promise.resolve({ id: 'pos_123' }) })
             const data = await response.json()
 
             expect(response.status).toBe(200)
-            expect(data.submitted_cv_id).toBe('cv_456')
+            expect(data.submitted_cv_id).toBe('123e4567-e89b-12d3-a456-426614174000')
         })
     })
 
     describe('DELETE /api/job-positions/[id]', () => {
         it('should delete position', async () => {
             mockSupabase.from.mockReturnValue({
+                update: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                        eq: vi.fn().mockResolvedValue({ error: null })
+                    })
+                }),
                 delete: vi.fn().mockReturnValue({
                     eq: vi.fn().mockReturnValue({
                         eq: vi.fn().mockResolvedValue({ error: null })
@@ -196,7 +248,10 @@ describe('Job Positions API', () => {
                 })
             })
 
-            const response = await DELETE({} as NextRequest, { params: Promise.resolve({ id: 'pos_123' }) })
+            const deleteMockRequest = {
+                nextUrl: { pathname: '/api/job-positions/pos_123' }
+            } as unknown as NextRequest
+            const response = await DELETE(deleteMockRequest, { params: Promise.resolve({ id: 'pos_123' }) })
             const data = await response.json()
 
             expect(response.status).toBe(200)

@@ -96,9 +96,22 @@ describe('CV Blueprint API', () => {
                 if (table === 'cv_blueprints') {
                     return {
                         select: vi.fn().mockReturnThis(),
-                        eq: vi.fn().mockReturnThis(),
-                        single: vi.fn().mockResolvedValueOnce({ data: null, error: null })
-                            .mockResolvedValueOnce({ data: mockBlueprint, error: null })
+                        eq: vi.fn().mockImplementation((field, value) => {
+                            if (field === 'user_id') {
+                                // First query: check if blueprint exists
+                                return {
+                                    single: vi.fn().mockResolvedValue({ data: null, error: null })
+                                }
+                            } else if (field === 'id' && value === 'new_blueprint_123') {
+                                // Second query: fetch created blueprint
+                                return {
+                                    single: vi.fn().mockResolvedValue({ data: mockBlueprint, error: null })
+                                }
+                            }
+                            return {
+                                single: vi.fn().mockResolvedValue({ data: null, error: null })
+                            }
+                        })
                     }
                 }
                 return {}
@@ -128,13 +141,21 @@ describe('CV Blueprint API', () => {
             const mergeResult = {
                 success: true,
                 blueprint: { id: 'blueprint_123', profile_data: {} },
-                changes: [{ type: 'skill', description: 'Added new skill: Node.js', impact: 0.1 }],
+                changes: [
+                    { type: 'personal', description: 'Updated name to "Jane Doe"', impact: 0.1 },
+                    { type: 'contact', description: 'Added email: jane@example.com', impact: 0.05 },
+                    { type: 'skill', description: 'Added new skill: JavaScript', impact: 0.1 },
+                    { type: 'skill', description: 'Added new skill: React', impact: 0.1 },
+                    { type: 'skill', description: 'Added new skill: Node.js', impact: 0.1 },
+                    { type: 'experience', description: 'Added experience: Senior Developer at Tech Corp', impact: 0.2 },
+                    { type: 'education', description: 'Added education: BS from University', impact: 0.15 }
+                ],
                 mergeSummary: {
-                    newSkills: 1,
+                    newSkills: 3,
                     newExperience: 1,
-                    newEducation: 0,
-                    updatedFields: 0,
-                    confidence: 0.85
+                    newEducation: 1,
+                    updatedFields: 2,
+                    confidence: 0.9599999999999997
                 }
             }
 

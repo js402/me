@@ -14,6 +14,7 @@ interface CVStore {
     setGuidance: (guidance: Record<string, unknown>) => void
     setJobDescription: (jobDescription: string) => void
     setExtractedInfo: (extractedInfo: ExtractedCVInfo) => void
+    appendSupplementalInfo: (questions: string[], answers: string[]) => void
     clear: () => void
 }
 
@@ -31,6 +32,14 @@ export const useCVStore = create<CVStore>()(
             setGuidance: (guidance) => set({ guidance }),
             setJobDescription: (jobDescription) => set({ jobDescription }),
             setExtractedInfo: (extractedInfo) => set({ extractedInfo }),
+            appendSupplementalInfo: (questions, answers) => set((state) => {
+                const additionalContext = `\n\nADDITIONAL USER CONTEXT:\n${answers.map((a, i) => `Q: ${questions[i]}\nA: ${a}`).join('\n')}`
+                return {
+                    content: state.content + additionalContext,
+                    // Clear analysis since CV content has changed
+                    analysis: ''
+                }
+            }),
             clear: () => set({ content: '', filename: '', analysis: '', guidance: null, jobDescription: '', extractedInfo: null }),
         }),
         {

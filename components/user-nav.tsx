@@ -4,13 +4,13 @@ import { useRouter } from 'next/navigation'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ModeToggle } from "@/components/mode-toggle"
 import { supabase } from "@/lib/supabase"
 import { User } from "@supabase/supabase-js"
-import { LogOut, User as UserIcon, Crown, Clock, Sparkles, FileText, Briefcase, Database } from "lucide-react"
+import { LogOut, User as UserIcon, Crown, Clock, Sparkles, Briefcase, Database, Sun, Moon, Monitor } from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useCVStore } from "@/hooks/useCVStore"
 import { BlueprintStatus } from "@/components/blueprint-status"
+import { useTheme } from "next-themes"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -27,6 +27,7 @@ interface UserNavProps {
 export function UserNav({ user }: UserNavProps) {
     const router = useRouter()
     const { hasProAccess, isTrialing } = useSubscription()
+    const { setTheme } = useTheme()
 
     const handleSignOut = async () => {
         // Clear CV data from local storage for security
@@ -56,13 +57,8 @@ export function UserNav({ user }: UserNavProps) {
 
     return (
         <nav className="flex items-center gap-2">
-            <ModeToggle />
-
             {/* Desktop Navigation - visible on md and up */}
             <div className="hidden md:flex items-center gap-3">
-                {/* Subscription Status */}
-                {subscriptionBadge}
-
                 {/* Blueprint Status */}
                 <BlueprintStatus compact={true} />
 
@@ -96,23 +92,38 @@ export function UserNav({ user }: UserNavProps) {
                             <span className="hidden lg:inline-block">
                                 {user.email?.split('@')[0]}
                             </span>
+                            {subscriptionBadge}
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>
-                            {user.email}
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleSignOut} className="text-red-600 dark:text-red-400">
                             <LogOut className="mr-2 h-4 w-4" />
                             Sign Out
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => setTheme("light")}>
+                            <Sun className="mr-2 h-4 w-4" />
+                            Light
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme("dark")}>
+                            <Moon className="mr-2 h-4 w-4" />
+                            Dark
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme("system")}>
+                            <Monitor className="mr-2 h-4 w-4" />
+                            System
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>
+                            {user.email}
+                        </DropdownMenuLabel>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
 
             {/* Mobile Navigation - visible on sm and down */}
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center gap-2">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="gap-2">
@@ -120,33 +131,45 @@ export function UserNav({ user }: UserNavProps) {
                             <span className="hidden sm:inline-block">
                                 {user.email?.split('@')[0]}
                             </span>
+                            {subscriptionBadge}
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>
-                            {user.email}
-                        </DropdownMenuLabel>
-                        <div className="px-2 py-1.5">
-                            {subscriptionBadge}
-                        </div>
+                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 dark:text-red-400">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Sign Out
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => router.push('/analysis')} className="gap-2">
-                            <Sparkles className="h-4 w-4" />
-                            My Analysis
+                        <DropdownMenuItem onClick={() => router.push('/positions')} className="gap-2">
+                            <Briefcase className="h-4 w-4" />
+                            My Applications
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => router.push('/cv-metadata')} className="gap-2">
                             <Database className="h-4 w-4" />
                             Manage CV Data
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push('/positions')} className="gap-2">
-                            <Briefcase className="h-4 w-4" />
-                            My Applications
+                        <DropdownMenuItem onClick={() => router.push('/analysis')} className="gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            My Analysis
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 dark:text-red-400">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Sign Out
+                        <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => setTheme("light")}>
+                            <Sun className="mr-2 h-4 w-4" />
+                            Light
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme("dark")}>
+                            <Moon className="mr-2 h-4 w-4" />
+                            Dark
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme("system")}>
+                            <Monitor className="mr-2 h-4 w-4" />
+                            System
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>
+                            {user.email}
+                        </DropdownMenuLabel>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

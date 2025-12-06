@@ -1,5 +1,4 @@
-import { Sparkles, Building2 } from "lucide-react"
-import { MatchScoreCircle } from "@/components/analysis/match-score-circle"
+import { Sparkles } from "lucide-react"
 import { SkillListCard } from "@/components/analysis/skill-list-card"
 
 export interface JobMatchResult {

@@ -37,8 +37,8 @@ export default function TailorCVPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    cvContent,
                     jobDescription
+                    // cvContent is now fetched from blueprint by the API
                 })
             })
 

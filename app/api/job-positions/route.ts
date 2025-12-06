@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { hasProAccess } from '@/lib/subscription'
 import { withAuth } from '@/lib/api-middleware'
+import { validateInput, createJobPositionSchema } from '@/lib/validation'
 
 export const POST = withAuth(async (request, { supabase, user }) => {
     try {
         const body = await request.json()
+
+        // Validate input using Zod schema
+        const validation = validateInput(createJobPositionSchema, body)
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error },
+                { status: 400 }
+            )
+        }
+
         const {
             company_name,
             position_title,
@@ -21,15 +32,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
             responsibility_alignment,
             employment_type,
             seniority_level
-        } = body
-
-        // Validate required fields
-        if (!company_name || !position_title || !job_description) {
-            return NextResponse.json(
-                { error: 'Company name, position title, and job description are required' },
-                { status: 400 }
-            )
-        }
+        } = validation.data
 
         // Check for existing position
         const { data: existing } = await supabase

@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useEffect, useState } from 'react'
 import Link from "next/link"
@@ -8,19 +8,23 @@ import { Navbar } from "@/components/navbar"
 import { Check } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { PageHeader } from "@/components/page-header"
-import { supabase } from "@/lib/supabase"
-import { hasProAccess } from "@/lib/subscription"
 
 export default function PricingPage() {
     const [isPro, setIsPro] = useState<boolean | null>(null)
 
     useEffect(() => {
         const checkProStatus = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                const proStatus = await hasProAccess(supabase, user.id)
-                setIsPro(proStatus)
-            } else {
+            try {
+                const response = await fetch('/api/subscription/status')
+                if (response.ok) {
+                    const { isPro } = await response.json()
+                    setIsPro(isPro)
+                } else {
+                    // Not authenticated or error
+                    setIsPro(false)
+                }
+            } catch (error) {
+                console.error('Error checking subscription status:', error)
                 setIsPro(false)
             }
         }
@@ -120,10 +124,10 @@ export default function PricingPage() {
                                 <Card
                                     key={index}
                                     className={`relative border-2 transition-all duration-300 hover:shadow-xl ${isCurrentPlan
-                                            ? 'border-green-500 shadow-lg scale-105'
-                                            : plan.popular
-                                                ? 'border-blue-500 shadow-lg scale-105'
-                                                : 'border-slate-200 dark:border-slate-800 hover:border-blue-500/50'
+                                        ? 'border-green-500 shadow-lg scale-105'
+                                        : plan.popular
+                                            ? 'border-blue-500 shadow-lg scale-105'
+                                            : 'border-slate-200 dark:border-slate-800 hover:border-blue-500/50'
                                         }`}
                                 >
                                     {isCurrentPlan && (

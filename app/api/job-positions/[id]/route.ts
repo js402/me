@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { withAuth } from '@/lib/api-middleware'
+import { validateInput, updateJobPositionSchema } from '@/lib/validation'
 
 export const GET = withAuth(async (request, { supabase, user }) => {
     // Extract ID from URL since withAuth changes the function signature
@@ -41,13 +42,17 @@ export const PATCH = withAuth(async (request, { supabase, user }) => {
 
     try {
         const body = await request.json()
-        const { status, notes, applied_date, submitted_cv_id } = body
 
-        const updates: Record<string, unknown> = {}
-        if (status) updates.status = status
-        if (notes !== undefined) updates.notes = notes
-        if (applied_date) updates.applied_date = applied_date
-        if (submitted_cv_id !== undefined) updates.submitted_cv_id = submitted_cv_id
+        // Validate input using Zod schema
+        const validation = validateInput(updateJobPositionSchema, body)
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error },
+                { status: 400 }
+            )
+        }
+
+        const updates: Record<string, unknown> = { ...validation.data }
 
         const { data, error } = await supabase
             .from('job_positions')

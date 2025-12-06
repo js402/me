@@ -66,6 +66,39 @@ CREATE POLICY "Users can delete own analyses"
   ON cv_analyses FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Create rate_limits table for serverless rate limiting
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  ip_address TEXT NOT NULL,
+  request_count INTEGER NOT NULL DEFAULT 1,
+  window_start TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_rate_limits_ip_window ON rate_limits(ip_address, window_start);
+
+-- Enable RLS
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'rate_limits'
+    AND n.nspname = 'public'
+    AND c.relrowsecurity = true
+  ) THEN
+    ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
+
+-- Allow service role to manage rate limits (no user-specific policies needed)
+DROP POLICY IF EXISTS "Service role can manage rate limits" ON rate_limits;
+CREATE POLICY "Service role can manage rate limits"
+  ON rate_limits FOR ALL
+  USING (auth.role() = 'service_role');
+
 -- Create updated_at trigger function if it doesn't exist
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

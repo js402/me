@@ -59,16 +59,37 @@ export async function mergeCVIntoBlueprint(
     cvHash: string
 ): Promise<MergeResult> {
     // Get or create blueprint
-    const { data: blueprintId, error: blueprintError } = await supabase.rpc('get_or_create_cv_blueprint', {
-        p_user_id: userId
-    })
+    let blueprintId: string
 
-    if (blueprintError) {
-        throw new Error(`Failed to get or create blueprint: ${blueprintError.message}`)
-    }
+    try {
+        const { data: rpcResult, error: blueprintError } = await supabase.rpc('get_or_create_cv_blueprint', {
+            p_user_id: userId
+        })
 
-    if (!blueprintId) {
-        throw new Error('Failed to get blueprint ID from RPC call')
+        if (blueprintError) {
+            // Check if the error is because the function doesn't exist (not in test environment)
+            if (blueprintError.message?.includes('function') &&
+                blueprintError.message?.includes('does not exist') &&
+                process.env.NODE_ENV !== 'test') {
+                throw new Error(
+                    'Database setup incomplete. Please run Supabase migrations to set up the CV blueprint system. ' +
+                    'Run: supabase db push'
+                )
+            }
+            throw new Error(`Failed to get or create blueprint: ${blueprintError.message}`)
+        }
+
+        blueprintId = rpcResult
+
+        if (!blueprintId) {
+            throw new Error('Failed to get blueprint ID from RPC call')
+        }
+    } catch (error) {
+        // If it's a network error or the function doesn't exist, provide setup instructions
+        if (error instanceof Error && error.message.includes('does not exist')) {
+            throw error // Re-throw our custom error
+        }
+        throw new Error(`Database setup required. Please ensure Supabase migrations are applied. Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 
     // Get current blueprint
